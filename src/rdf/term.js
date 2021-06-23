@@ -10,6 +10,11 @@
 //	Symbol
 
 (function() {
+
+if (typeof process === 'object' && process + '' === '[object process]'){
+  this.$rdf = require('./init');
+}
+
 var Term = {};
 
 Term.Empty = function () {
@@ -492,5 +497,10 @@ Term.Formula.prototype.whether = function (s, p, o, w) {
   return this.statementsMatching(s, p, o, w, false).length;
 }
 
-Object.assign($rdf, Term);
+if (typeof process === 'object' && process + '' === '[object process]'){
+  module.exports = Term;
+}
+else {
+  Object.assign($rdf, Term);
+}
 })();

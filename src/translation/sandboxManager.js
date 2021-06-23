@@ -26,16 +26,15 @@
 
 /**
  * @class Manages the translator sandbox
- * @param {Translate} translate
  */
-var SandboxManager = function() {
+Zotero.Translate.SandboxManager = function() {
 	this.sandbox = {
 		Zotero: {},
 		Promise,
 	};
 };
 
-SandboxManager.prototype = {
+Zotero.Translate.SandboxManager.prototype = {
 	/**
 	 * Evaluates code in the sandbox
 	 * @param {String} code Code to evaluate
@@ -73,11 +72,13 @@ SandboxManager.prototype = {
 	/**
 	 * Imports an object into the sandbox
 	 *
-	 * @param {Object} object Object to be imported (under Zotero)
+	 * @param {Object} object Object to be imported (under attachTo)
 	 * @param {Boolean} passTranslateAsFirstArgument Whether the translate instance should be passed
-	 *     as the first argument to the function.
+	 *		as the first argument to the function.
+	 * @param {Object} attachTo An item from this.sandbox to which the object will be attached
+	 * 		defaults to this.sandbox.Zotero
 	 */
-	importObject: function(object, passAsFirstArgument, attachTo) {
+	importObject: function(object, passTranslateAsFirstArgument, attachTo) {
 		if(!attachTo) attachTo = this.sandbox.Zotero;
 		
 		for(var key in (object.__exposedProps__ ? object.__exposedProps__ : object)) {
@@ -87,7 +88,7 @@ SandboxManager.prototype = {
 				attachTo[key] = new function() {
 					var fn = object[key];
 					return function() {
-						var args = (passAsFirstArgument ? [passAsFirstArgument] : []);
+						var args = (passTranslateAsFirstArgument ? [passTranslateAsFirstArgument] : []);
 						for(var i=0; i<arguments.length; i++) {
 							args.push(arguments[i]);
 						}
@@ -97,7 +98,7 @@ SandboxManager.prototype = {
 				}
 				
 				// attach members
-				this.importObject(object[key], passAsFirstArgument ? passAsFirstArgument : null, attachTo[key]);
+				this.importObject(object[key], passTranslateAsFirstArgument ? passTranslateAsFirstArgument : null, attachTo[key]);
 			} else {
 				attachTo[key] = object[key];
 			}

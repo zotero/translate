@@ -28,56 +28,78 @@
  */
 
 (function() {
-var TypeSchema = CONNECTOR_TYPE_SCHEMA;
 
-Object.assign(Zotero, new function() {
+var TypeSchema;
+if (typeof ZOTERO_TYPE_SCHEMA != 'undefined') {
+	TypeSchema = ZOTERO_TYPE_SCHEMA;
+}
+
+var CachedTypes = new function() {
 	const schemaTypes = ["itemTypes", "creatorTypes", "fields"];
-	const typeData = {};
+	var typeData = {};
+	var itemTypes, creatorTypes, fields;
+
+	this.setTypeSchema = function(typeSchema) {
+		TypeSchema = typeSchema;
+		typeData = {};
+
+		// attach IDs and make referenceable by either ID or name
+		for (let i = 0; i < schemaTypes.length; i++) {
+			let schemaType = schemaTypes[i];
+			typeData[schemaType] = Zotero.Utilities.deepCopy(TypeSchema[schemaType]);
+			for (let id in TypeSchema[schemaType]) {
+				let entry = typeData[schemaType][id];
+				entry.unshift(parseInt(id, 10));
+				typeData[schemaType][entry[1]/* name */] = entry;
+			}
+		}
+
+		itemTypes = typeData.itemTypes;
+		creatorTypes = typeData.creatorTypes;
+		fields = typeData.fields;
+	};
 	
-	// attach IDs and make referenceable by either ID or name
-	for (let i = 0; i < schemaTypes.length; i++) {
-		let schemaType = schemaTypes[i];
-		typeData[schemaType] = Zotero.Utilities.deepCopy(TypeSchema[schemaType]);
-		for (let id in TypeSchema[schemaType]) {
-			let entry = typeData[schemaType][id];
-			entry.unshift(parseInt(id, 10));
-			typeData[schemaType][entry[1]/* name */] = entry;
+	if (TypeSchema) {
+		this.setTypeSchema(TypeSchema);
+	}
+
+	class Types {
+		constructor(schemeType) {
+			this.schemeType = schemeType;
+		}
+
+		get type() {
+			return typeData[this.schemeType];
+		}
+
+		getID(idOrName) {
+			var type = this.type[idOrName];
+			return (type ? type[0]/* id */ : false);
+		}
+
+		getName(idOrName) {
+			var type = this.type[idOrName];
+			return (type ? type[1]/* name */ : false);
+		}
+
+		getLocalizedString(idOrName) {
+			var type = this.type[idOrName];
+			return (type ? type[2]/* localizedString */ : false);
 		}
 	}
-	
-	var itemTypes = typeData.itemTypes;
-	var creatorTypes = typeData.creatorTypes;
-	var fields = typeData.fields;
-	
-	function Types() {
-		var thisType = typeData[this.schemaType];
+
+	this.ItemTypes = new (class extends Types {
+		constructor() {
+			super("itemTypes");
+		}
+	})();
+
+	this.CreatorTypes = new (class extends Types {
+		constructor() {
+			super("creatorTypes");
+		}
 		
-		this.getID = function(idOrName) {
-			var type = thisType[idOrName];
-			return (type ? type[0]/* id */ : false);
-		};
-		
-		this.getName = function(idOrName) {
-			var type = thisType[idOrName];
-			return (type ? type[1]/* name */ : false);
-		};
-		
-		this.getLocalizedString = function(idOrName) {
-			var type = thisType[idOrName];
-			return (type ? type[2]/* localizedString */ : false);
-		};
-	}
-	
-	this.ItemTypes = new function() {
-		this.schemaType = "itemTypes";
-		Types.call(this);
-	}
-	
-	this.CreatorTypes = new function() {
-		this.schemaType = "creatorTypes";
-		Types.call(this);
-		
-		this.getTypesForItemType = function(idOrName) {
+		getTypesForItemType(idOrName) {
 			var itemType = itemTypes[idOrName];
 			if(!itemType) return false;
 			
@@ -98,23 +120,24 @@ Object.assign(Zotero, new function() {
 			return outputTypes;
 		};
 		
-		this.getPrimaryIDForType = function(idOrName) {
+		getPrimaryIDForType(idOrName) {
 			var itemType = itemTypes[idOrName];
 			if(!itemType) return false;
 			return itemType[3]/* creatorTypes */[0];
 		};
 		
-		this.isValidForItemType = function(creatorTypeID, itemTypeID) {
+		isValidForItemType(creatorTypeID, itemTypeID) {
 			let itemType = itemTypes[itemTypeID];
 			return itemType[3]/* creatorTypes */.includes(creatorTypeID);
 		};
-	};
+	})();
 	
-	this.ItemFields = new function() {
-		this.schemaType = "fields";
-		Types.call(this);
+	this.ItemFields = new (class extends Types {
+		constructor() {
+			super("fields");
+		}
 		
-		this.isValidForType = function(fieldIdOrName, typeIdOrName) {
+		isValidForType(fieldIdOrName, typeIdOrName) {
 			var field = fields[fieldIdOrName], itemType = itemTypes[typeIdOrName];
 			
 			// mimics itemFields.js
@@ -124,11 +147,11 @@ Object.assign(Zotero, new function() {
 			return itemType[4].indexOf(field[0]) !== -1;
 		};
 		
-		this.isBaseField = function(fieldID) {
+		isBaseField(fieldID) {
 			return fields[fieldID][2];
 		};
 		
-		this.getFieldIDFromTypeAndBase = function(typeIdOrName, fieldIdOrName) {
+		getFieldIDFromTypeAndBase(typeIdOrName, fieldIdOrName) {
 			var baseField = fields[fieldIdOrName], itemType = itemTypes[typeIdOrName];
 			
 			if(!baseField || !itemType) return false;
@@ -147,7 +170,7 @@ Object.assign(Zotero, new function() {
 			return false;
 		};
 		
-		this.getBaseIDFromTypeAndField = function(typeIdOrName, fieldIdOrName) {
+		getBaseIDFromTypeAndField(typeIdOrName, fieldIdOrName) {
 			var field = fields[fieldIdOrName], itemType = itemTypes[typeIdOrName];
 			if(!field || !itemType) {
 				throw new Error("Invalid field or type ID");
@@ -157,9 +180,15 @@ Object.assign(Zotero, new function() {
 			return baseField ? baseField : false;
 		};
 		
-		this.getItemTypeFields = function(typeIdOrName) {
+		getItemTypeFields(typeIdOrName) {
 			return itemTypes[typeIdOrName][4]/* fields */.slice();
 		};
-	};
-});
+	})();
+}
+if (typeof process === 'object' && process + '' === '[object process]'){
+	module.exports = CachedTypes
+}
+else {
+	Object.assign(Zotero, CachedTypes);
+}
 })();

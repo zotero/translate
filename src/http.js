@@ -61,7 +61,7 @@ Zotero.HTTP = new function() {
 	 *     request succeeds, or rejected if the browser is offline or a non-2XX status response
 	 *     code is received (or a code not in options.successCodes if provided).
 	 */
-	this.request = function(method, url, options = {}) {
+	this.request = async function(method, url, options = {}) {
 		// Default options
 		options = Object.assign({
 			body: null,
@@ -73,120 +73,8 @@ Zotero.HTTP = new function() {
 			responseCharset: null,
 			successCodes: null
 		}, options);
-		
-		var useContentXHR = false;
-		
-		if (Zotero.isInject) {
-			// The privileged XHR that Firefox makes available to content scripts so that they
-			// can make cross-domain requests doesn't include the Referer header in requests [1],
-			// so sites that check for it don't work properly. As long as we're not making a
-			// cross-domain request, we can use the content XHR that it provides, which does
-			// include Referer. Chrome's XHR in content scripts includes Referer by default.
-			//
-			// [1] https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Content_scripts#XHR_and_Fetch
-			if (Zotero.HTTP.isSameOrigin(url)) {
-				if (typeof content != 'undefined' && content.XMLHttpRequest) {
-					Zotero.debug("Using content XHR");
-					useContentXHR = true;
-				}
-			}
-			else {
-				if (Zotero.isBookmarklet) {
-					Zotero.debug("HTTP: Attempting cross-site request from bookmarklet; this may fail");
-				}
-				else {
-					// Make a cross-origin request via the background page, parsing the responseText with
-					// DOMParser and returning a Proxy with 'response' set to the parsed document
-					let isDocRequest = options.responseType == 'document';
-					let coOptions = Object.assign({}, options);
-					if (isDocRequest) {
-						coOptions.responseType = 'text';
-					}
-					return Zotero.COHTTP.request(method, url, coOptions).then(function (xmlhttp) {
-						if (!isDocRequest) return xmlhttp;
-						
-						Zotero.debug("Parsing cross-origin response for " + url);
-						let parser = new DOMParser();
-						let contentType = xmlhttp.getResponseHeader("Content-Type");
-						if (contentType != 'application/xml' && contentType != 'text/xml') {
-							contentType = 'text/html';
-						}
-						let doc = parser.parseFromString(xmlhttp.responseText, contentType);
-						
-						return new Proxy(xmlhttp, {
-							get: function (target, name) {
-								return name == 'response' ? doc : target[name];
-							}
-						});
-					});
-				}
-			}
-		}
-		
-		let logBody = '';
-		if (['GET', 'HEAD'].includes(method)) {
-			if (options.body != null) {
-				throw new Error(`HTTP ${method} cannot have a request body (${options.body})`)
-			}
-		} else if(options.body) {
-			options.body = typeof options.body == 'string' ? options.body : JSON.stringify(options.body);
-			
-			if (!options.headers) options.headers = {};
-			if (!options.headers["Content-Type"]) {
-				options.headers["Content-Type"] = "application/x-www-form-urlencoded";
-			}
-			else if (options.headers["Content-Type"] == 'multipart/form-data') {
-				// Allow XHR to set Content-Type with boundary for multipart/form-data
-				delete options.headers["Content-Type"];
-			}
-					
-			logBody = `: ${options.body.substr(0, options.logBodyLength)}` +
-					options.body.length > options.logBodyLength ? '...' : '';
-			// TODO: make sure below does its job in every API call instance
-			// Don't display password or session id in console
-			logBody = logBody.replace(/password":"[^"]+/, 'password":"********');
-			logBody = logBody.replace(/password=[^&]+/, 'password=********');
-		}
-		Zotero.debug(`HTTP ${method} ${url}${logBody}`);
-		
-		var xmlhttp = useContentXHR ? new content.XMLHttpRequest() : new XMLHttpRequest();
-		xmlhttp.timeout = options.timeout;
-		var promise = Zotero.HTTP._attachHandlers(url, xmlhttp, options);
-		
-		xmlhttp.open(method, url, true);
 
-		for (let header in options.headers) {
-			xmlhttp.setRequestHeader(header, options.headers[header]);
-		}
-		
-		xmlhttp.responseType = options.responseType || '';
-		
-		// Maybe should provide "mimeType" option instead. This is xpcom legacy, where responseCharset
-		// could be controlled manually
-		if (options.responseCharset) {
-			xmlhttp.overrideMimeType("text/plain; charset=" + options.responseCharset);
-		}
-		
-		xmlhttp.send(options.body);
-		
-		return promise.then(function(xmlhttp) {
-			if (options.debug) {
-				if (xmlhttp.responseType == '' || xmlhttp.responseType == 'text') {
-					Zotero.debug(`HTTP ${xmlhttp.status} response: ${xmlhttp.responseText}`);
-				}
-				else {
-					Zotero.debug(`HTTP ${xmlhttp.status} response`);
-				}
-			}	
-			
-			let invalidDefaultStatus = options.successCodes === null &&
-				(xmlhttp.status < 200 || xmlhttp.status >= 300);
-			let invalidStatus = Array.isArray(options.successCodes) && !options.successCodes.includes(xmlhttp.status);
-			if (invalidDefaultStatus || invalidStatus) {
-				throw new Zotero.HTTP.StatusError(xmlhttp, url);
-			}
-			return xmlhttp;
-		});
+		throw new Error(`Zotero.HTTP.request(): not implemented`);
 	};
 	/**
 	* Send an HTTP GET request via XMLHTTPRequest
@@ -229,75 +117,8 @@ Zotero.HTTP = new function() {
 		});
 		return true;	
 	};
-	
-	
-	/**
-	 * Adds a ES6 Proxied location attribute
-	 * @param doc
-	 * @param docUrl
-	 */
-	this.wrapDocument = function(doc, docURL) {
-		let url = require('url');
-		docURL = url.parse(docURL);
-		docURL.toString = () => this.href;
-		var wrappedDoc = new Proxy(doc, {
-			get: function (t, prop) {
-				if (prop === 'location') {
-					return docURL;
-				}
-				else if (prop == 'evaluate') {
-					// If you pass the document itself into doc.evaluate as the second argument
-					// it fails, because it receives a proxy, which isn't of type `Node` for some reason.
-					// Native code magic.
-					return function() {
-						if (arguments[1] == wrappedDoc) {
-							arguments[1] = t;
-						}
-						return t.evaluate.apply(t, arguments)
-					}
-				}
-				else {
-					if (typeof t[prop] == 'function') {
-						return t[prop].bind(t);
-					}
-					return t[prop];
-				}
-			}
-		});
-		return wrappedDoc;
-	};
-	
-	
-	/**
-	 * Adds request handlers to the XMLHttpRequest and returns a promise that resolves when
-	 * the request is complete. xmlhttp.send() still needs to be called, this just attaches the
-	 * handler
-	 *
-	 * See {@link Zotero.HTTP.request} for parameters
-	 * @private
-	 */
-	this._attachHandlers = function(url, xmlhttp, options) {
-		var deferred = Zotero.Promise.defer();
-		xmlhttp.onload = () => deferred.resolve(xmlhttp);
-		xmlhttp.onerror = xmlhttp.onabort = function() {
-			var e = new Zotero.HTTP.StatusError(xmlhttp, url);
-			if (options.successCodes === false) {
-				deferred.resolve(xmlhttp);
-			} else {
-				deferred.reject(e);
-			}
-		};
-		xmlhttp.ontimeout = function() {
-			var e = new Zotero.HTTP.TimeoutError(xmlhttp.timeout);
-			Zotero.logError(e);
-			deferred.reject(e);
-		};
-		return deferred.promise;
-	};
-}
-
-// Alias as COHTTP = Cross-origin HTTP; this is how we will call it from children
-// For injected scripts, this get overwritten in messaging.js (see messages.js)
-Zotero.COHTTP = {
-	request: Zotero.HTTP.request
 };
+
+if (typeof process === 'object' && process + '' === '[object process]'){
+	module.exports = Zotero.HTTP;
+}

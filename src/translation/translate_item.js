@@ -23,40 +23,72 @@
     ***** END LICENSE BLOCK *****
 */
 
-ItemSaver = function(libraryID, attachmentMode, forceTagType) {};
-ItemSaver.ATTACHMENT_MODE_IGNORE = 0;
-ItemSaver.ATTACHMENT_MODE_DOWNLOAD = 1;
-ItemSaver.ATTACHMENT_MODE_FILE = 2;
+/**
+ * A class which will be passed the results of translation as Zotero items and collections.
+ *
+ * This is a virtual class for reference implementation purposes
+ * A consumer of the translation code should implement these functions
+ */
+Zotero.Translate.ItemSaver = function(libraryID, attachmentMode, forceTagType) {};
+Zotero.Translate.ItemSaver.ATTACHMENT_MODE_IGNORE = 0;
+Zotero.Translate.ItemSaver.ATTACHMENT_MODE_DOWNLOAD = 1;
+Zotero.Translate.ItemSaver.ATTACHMENT_MODE_FILE = 2;
 
-// We don't define a real itemSaver here because Zotero.Translate will always be run in object-only
-// mode, but we do define a saveCollection no-op.
-ItemSaver.prototype.saveCollection = function() {};
+/**
+ * Only used by import translators and can remain a no-OP
+ * @param {Array} collections
+ */
+Zotero.Translate.ItemSaver.prototype.saveCollection = function(collections) {};
 
-ItemSaver.prototype.saveItems = async function (jsonItems, attachmentCallback, itemsDoneCallback) {
-	this.items = (this.items || []).concat(jsonItems);
-	return jsonItems
-}
+/**
+ * Called by Zotero.Translate upon successful item translation
+ * @param {Object[]} jsonItems - Items in Zotero.Item.toArray() format
+ * @param {Function} [attachmentCallback] A callback that receives information about attachment
+ *     save progress. The callback will be called as attachmentCallback(attachment, false, error)
+ *     on failure or attachmentCallback(attachment, progressPercent) periodically during saving.
+ * @param {Function} [itemsDoneCallback] A callback that is called once all top-level items are
+ *     done saving with a list of items. Can include saved notes, but should exclude attachments.
+ */
+Zotero.Translate.ItemSaver.prototype.saveItems = async function (jsonItems, attachmentCallback, itemsDoneCallback) {
+	throw new Error(`Zotero.Translate.ItemSaver.prototype.saveItems: not implemented`);
+};
 
-ItemGetter = function() {
+// Used by export translators in Zotero
+Zotero.Translate.ItemGetter = function() {
 	this._itemsLeft = null;
-	this._collectionsLeft = null;
 	this._itemID = 1;
 };
 
-ItemGetter.prototype = {
-	"setItems":function(items) {
+Zotero.Translate.ItemGetter.prototype = {
+	get numItemsRemaining() {
+		return this._itemsLeft.length
+	},
+	
+	setItems: function(items) {
 		this._itemsLeft = items;
 		this.numItems = this._itemsLeft.length;
 	},
+
+	setCollection: function (collection, getChildCollections) {
+		throw new Error(`Zotero.Translate.ItemGetter.prototype.setCollection: not implemented`);
+	},
+
+	/**
+	 * NOTE: This function should use the Zotero.Promise.method wrapper which adds a
+	 * isResolved property to the returned promise for noWait translation.
+	 */
+	setAll: Zotero.Promise.method(function (libraryID, getChildCollections) {
+		throw new Error(`Zotero.Translate.ItemGetter.prototype.setAll: not implemented`);
+	}),
 	
 	/**
 	 * Retrieves the next available item
 	 */
-	"nextItem":function() {
+	nextItem: function() {
 		if(!this._itemsLeft.length) return false;
 		var item = this._itemsLeft.shift();
 		if (this.legacy) {
-			item = Zotero.Utilities.itemToLegacyExportFormat(item);
+			item = Zotero.Utilities.Item.itemToLegacyExportFormat(item);
 		}
 		if (!item.attachments) {
 			item.attachments = [];
@@ -82,8 +114,7 @@ ItemGetter.prototype = {
 		return item;
 	},
 	
-	"nextCollection":function() {
+	nextCollection: function() {
 		return false;
 	}
 }
-ItemGetter.prototype.__defineGetter__("numItemsRemaining", function() { return this._itemsLeft.length });

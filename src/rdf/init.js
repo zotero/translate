@@ -16,6 +16,10 @@
  * but otherwise we'll stick to this code as it works for our purposes
  */
 
+if (typeof process === 'object' && process + '' === '[object process]'){
+	var Zotero = require('../zotero');
+}
+
 var $rdf = {
 	Util: {
 		ArrayIndexOf: function (arr, item, i) {
@@ -37,4 +41,19 @@ var $rdf = {
 	log: Zotero.debug
 };
 
-Zotero.RDF = {AJAW: $rdf}
+if (typeof process === 'object' && process + '' === '[object process]'){
+	$rdf.Util = require('./uri');
+	$rdf = Object.assign($rdf, require('./term'));
+	$rdf.IndexedFormula = require('./identity');
+	$rdf.N3Parser = require('./n3parser');
+	$rdf.RDFParser = require('./rdfparser');
+	$rdf.Serializer = require('./serialize');
+}
+else {
+	if (Zotero.RDF) {
+		Zotero.RDF.AJAW = $rdf;
+	}
+	else {
+		Zotero.RDF = { AJAW: $rdf };
+	}
+}

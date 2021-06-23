@@ -52,6 +52,10 @@
  * associated documentation will at all times remain with copyright
  * holders.
  */
+
+if (typeof process === 'object' && process + '' === '[object process]'){
+  var $rdf = require('./init');
+}
  
 /**
  * @class Class defining an RDFParser resource object tied to an RDFStore
@@ -567,4 +571,8 @@ $rdf.RDFParser = function (store) {
     }
     return frame
   }
+}
+
+if (typeof process === 'object' && process + '' === '[object process]'){
+  module.exports = $rdf.RDFParser;
 }

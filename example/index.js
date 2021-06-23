@@ -98,7 +98,9 @@ function addLocationPropToDoc(doc, docURL) {
 	return wrappedDoc;
 };
 
-window.addEventListener('DOMContentLoaded', function() {
+window.addEventListener('DOMContentLoaded', async function() {
 	Zotero.Debug.init(1);
-	Zotero.Repo.init();
+	await Zotero.Translators.init();
+	xhr = await Zotero.HTTP.request('GET', 'https://api.zotero.org/schema', { responseType: 'json' });
+	Zotero.Schema.init(xhr.response);
 });

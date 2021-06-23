@@ -1,3 +1,7 @@
+if (typeof process === 'object' && process + '' === '[object process]'){
+  var $rdf = require('./init');
+}
+
 $rdf.N3Parser = function () {
 
   function hexify(str) { // also used in parser
@@ -1382,3 +1386,7 @@ the module, including tests and test harness.
   return SinkParser;
 
 }();
+
+if (typeof process === 'object' && process + '' === '[object process]'){
+  module.exports = $rdf.N3Parser;
+}

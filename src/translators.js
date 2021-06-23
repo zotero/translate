@@ -23,148 +23,69 @@
     ***** END LICENSE BLOCK *****
 */
 
-// Enumeration of types of translators
-window.TRANSLATOR_TYPES = {"import":1, "export":2, "web":4, "search":8};
-
-window.TRANSLATOR_CACHING_PROPERTIES = TRANSLATOR_REQUIRED_PROPERTIES.concat(["browserSupport", "targetAll"]);
 
 /**
  * Singleton to handle loading and caching of translators
- * @namespace
+ * This is a virtual class for reference implementation purposes
+ * A consumer of the translation code should implement these functions
  */
 Zotero.Translators = new function() {
-	var _cache, _translators;
-	var _initialized = false;
-	var _fullFrameDetectionWhitelist = ['resolver.ebscohost.com'];
-	var _resetAttempted = false;
+	// Should be populated on this.init()
+	this._cache = {"import":[], "export":[], "web":[], "search":[]};
+	// Should set to true after translators are loaded into memory
+	this._initialized = false;
 	
 	/**
-	 * Initializes translator cache, loading all relevant translators into memory
-	 * @param {Zotero.Translate[]} [translators] List of translators. If not specified, it will be
-	 *                                           retrieved from storage.
-	 */
-	this.init = function(translators) {
-		if(!translators) {
-			translators = [];
-			if((Zotero.isBrowserExt || Zotero.isSafari) && Zotero.Prefs.get("translatorMetadata")) {
-				try {
-					translators = Zotero.Prefs.get("translatorMetadata");
-					if(typeof translators !== "object") {
-						translators = [];
-					}
-				} catch(e) {}
-			}
-		}
-		
-		_cache = {"import":[], "export":[], "web":[], "search":[]};
-		_translators = {};
-		_initialized = true;
-		
-		// Build caches
-		for(var i=0; i<translators.length; i++) {
-			try {
-				var translator = new Zotero.Translator(translators[i]);
-				_translators[translator.translatorID] = translator;
-				
-				for(var type in TRANSLATOR_TYPES) {
-					if(translator.translatorType & TRANSLATOR_TYPES[type]) {
-						_cache[type].push(translator);
-					}
-				}
-			} catch(e) {
-				Zotero.logError(e);
-				try {
-					Zotero.logError("Could not load translator "+JSON.stringify(translators[i]));
-				} catch(e) {}
-			}
-		}
-		
-		// Sort by priority
-		var cmp = function (a, b) {
-			if (a.priority > b.priority) {
-				return 1;
-			}
-			else if (a.priority < b.priority) {
-				return -1;
-			}
-		}
-		for(var type in _cache) {
-			_cache[type].sort(cmp);
-		}
-	}
-	
-	/**
-	 * Gets the translator that corresponds to a given ID, without attempting to retrieve code
+	 * Gets the translator that corresponds to a given ID with code set
 	 * @param {String} id The ID of the translator
 	 */
-	this.getWithoutCode = function(id) {
-		if(!_initialized) Zotero.Translators.init();
-		return _translators[id] ? _translators[id] : false;
-	}
-	
+	this.get = function (id) {
+		throw new Error(`Zotero.Translators.get(): not implemented`);
+	};
+
 	/**
-	 * Gets the translator that corresponds to a given ID
+	 * Gets the translator code that corresponds to a given ID
+	 * This function is only necessary if translators are not loaded with
+	 * code already during init(). If retrieving from repo you may want to
+	 * cache updated translator info if metadata.lastUpdated > localTranslator.lastUpdated
+	 * 
+	 * NOTE: This function should use the Zotero.Promise.method wrapper which adds a
+	 * isResolved property to the returned promise for noWait translation.
 	 *
-	 * @param {String} id The ID of the translator
+	 * @param {Zotero.Translator} translator
+	 * @return {String} translator code
 	 */
-	this.get = Zotero.Promise.method(function (id) {
-		if(!_initialized) Zotero.Translators.init();
-		var translator = _translators[id];
-		if(!translator) {
-			return false;
-		}
-		
-		// only need to get code if it is of some use
-		if(translator.runMode === Zotero.Translator.RUN_MODE_IN_BROWSER
-				&& !translator.hasOwnProperty("code")) {
-			return translator.getCode().then(() => translator);
-		} else {
-			return translator;
-		}
+	this.getCodeForTranslator = Zotero.Promise.method(async function (translator) {
+		throw new Error(`Zotero.Translators.getCodeForTranslator(): not implemented`);
 	});
-	
+
 	/**
 	 * Gets all translators for a specific type of translation
 	 * @param {String} type The type of translators to get (import, export, web, or search)
-	 * @param {Boolean} [debugMode] Whether to assume debugging mode. If true, code is included for 
-	 *                              unsupported translators, and code originally retrieved from the
-	 *                              repo is re-retrieved from Zotero Standalone.
 	 */
-	this.getAllForType = Zotero.Promise.method(function (type, debugMode) {
-		if(!_initialized) Zotero.Translators.init()
-		var translators = _cache[type].slice(0);
-		var codeGetter = new Zotero.Translators.CodeGetter(translators, debugMode);
-		return codeGetter.getAll().then(function() {
-			return translators;
-		});;
-	});
-	
+	this.getAllForType = async function (type) {
+		throw new Error(`Zotero.Translators.getAllForType(): not implemented`);
+	};
+
 	/**
 	 * Gets web translators for a specific location
 	 *
-	 * NOTE: Keep in sync with the bookmarklet version
-	 *
-	 * @param {String} uri The URI for which to look for translators
+	 * @param {String} URI The URI where translation will run
+	 * @param {String} rootURI The root URI of the page of translation if URI is a frame location
 	 * @return {Promise<Array[]>} - A promise for a 2-item array containing an array of translators and
 	 *     an array of functions for converting URLs from proper to proxied forms
 	 */
-	this.getWebTranslatorsForLocation = Zotero.Promise.method(function (URI, rootURI, callback) {
-		if (callback) {
-			// If callback is present then this call is coming from an injected frame,
-			// so we may as well treat it as if it's a root-frame
-			rootURI = URI;
-		} else {
-			// Hopefully a temporary hard-coded list
-			for (let str of _fullFrameDetectionWhitelist) {
-				if (URI.includes(str)) {
-					rootURI = URI;
-					break;
-				}
+	this.getWebTranslatorsForLocation = async function (URI, rootURI) {
+		var isFrame = URI !== rootURI;
+		if (!this._initialized) {
+			if (this.init) {
+				await this.init();
+			}
+			else {
+				throw new Error('Zotero.Translators.getWebTranslatorsForLocation(): Zotero.Translators is not not initialized');
 			}
 		}
-		var isFrame = URI !== rootURI;
-		if(!_initialized) Zotero.Translators.init();
-		var allTranslators = _cache["web"];
+		var allTranslators = this._cache["web"];
 		var potentialTranslators = [];
 		var proxies = [];
 		
@@ -206,143 +127,36 @@ Zotero.Translators = new function() {
 				}
 			}
 		}
-		
-		var codeGetter = new Zotero.Translators.CodeGetter(potentialTranslators);
-		return codeGetter.getAll().then(function () {
-			return [potentialTranslators, proxies];
-		});
-	});
 
-	/**
-	 * Converts translators to JSON-serializable objects
-	 */
-	this.serialize = function(translator, properties) {
-		// handle translator arrays
-		if(translator.length !== undefined) {
-			var newTranslators = new Array(translator.length);
-			for(var i in translator) {
-				newTranslators[i] = Zotero.Translators.serialize(translator[i], properties);
-			}
-			return newTranslators;
-		}
-		
-		// handle individual translator
-		var newTranslator = {};
-		for(var i in properties) {
-			var property = properties[i];
-			newTranslator[property] = translator[property];
-		}
-		return newTranslator;
-	}
-	
-	/**
-	 * Saves all translator metadata to localStorage
-	 * @param {Object[]} newMetadata Metadata for new translators
-	 * @param {Boolean} reset Whether to clear all existing translators and overwrite them with
-	 *                        the specified translators.
-	 */
-	this.update = function(newMetadata, reset) {
-		if (!_initialized) Zotero.Translators.init();
-		if (!newMetadata.length) return;
-		var serializedTranslators = [];
-		
-		if (reset) {
-			serializedTranslators = newMetadata.map((t) => new Zotero.Translator(t));
-		}
-		else {
-			var hasChanged = false;
-			
-			// Update translators with new metadata
-			for(var i in newMetadata) {
-				var newTranslator = newMetadata[i];
-				
-				if (newTranslator.deleted) continue;
-				
-				if(_translators.hasOwnProperty(newTranslator.translatorID)) {
-					var oldTranslator = _translators[newTranslator.translatorID];
-					
-					// check whether translator has changed
-					if(oldTranslator.lastUpdated !== newTranslator.lastUpdated) {
-						// check whether newTranslator is actually newer than the existing
-						// translator, and if not, don't update
-						if(Zotero.Date.sqlToDate(newTranslator.lastUpdated) < Zotero.Date.sqlToDate(oldTranslator.lastUpdated)) {
-							continue;
-						}
-						
-						Zotero.debug(`Translators: Updating ${newTranslator.label}`);
-						oldTranslator.init(newTranslator);
-						hasChanged = true;
-					}
-				} else {
-					Zotero.debug(`Translators: Adding ${newTranslator.label}`);
-					_translators[newTranslator.translatorID] = new Zotero.Translator(newTranslator);
-					hasChanged = true;
-				}
-			}
-			
-			let deletedTranslators = newMetadata
-				.filter(translator => translator.deleted)
-				.map(translator => translator.translatorID);
-				
-			for (let id of deletedTranslators) {
-				// Already deleted
-				if (! _translators.hasOwnProperty(id)) continue;
-				
-				hasChanged = true;
-				Zotero.debug(`Translators: Removing ${_translators[id].label}`);
-				delete _translators[id];
-			}
-			
-			if(!hasChanged) return;
-			
-			// Serialize translators
-			for(var i in _translators) {
-				var serializedTranslator = this.serialize(_translators[i], TRANSLATOR_CACHING_PROPERTIES);
-				
-				// don't save run mode
-				delete serializedTranslator.runMode;
-				
-				serializedTranslators.push(serializedTranslator);
-			}
-		}
-		
-		// Store
-		if (Zotero.isBrowserExt || Zotero.isSafari) {
-			Zotero.Prefs.set('translatorMetadata', serializedTranslators);
-			Zotero.debug("Translators: Saved updated translator list ("+serializedTranslators.length+" translators)");
-		}
-		
-		// Reinitialize
-		Zotero.Translators.init(serializedTranslators);
-	}
-}
+		let codeGetter = new Zotero.Translators.CodeGetter(potentialTranslators);
+		await codeGetter.getAll();
+		return [potentialTranslators, proxies];
+	};
+};
+
 
 /**
  * A class to get the code for a set of translators at once
  *
  * @param {Zotero.Translator[]} translators Translators for which to retrieve code
- * @param {Boolean} [debugMode] If true, include code for unsupported translators
  */
-Zotero.Translators.CodeGetter = function(translators, debugMode) {
+Zotero.Translators.CodeGetter = function(translators) {
 	this._translators = translators;
-	this._debugMode = debugMode;
-	this._concurrency = 1;
+	this._concurrency = 2;
 };
 
-Zotero.Translators.CodeGetter.prototype.getCodeFor = Zotero.Promise.method(function(i) {
+Zotero.Translators.CodeGetter.prototype.getCodeFor = async function(i) {
 	let translator = this._translators[i];
-	// retrieve code if no code and translator is supported locally
-	if (translator.runMode === Zotero.Translator.RUN_MODE_IN_BROWSER
-			// or if in debug mode and the code we have came from the repo (which doesn't
-			// include test cases)
-			|| (this._debugMode && Zotero.Repo && translator.codeSource === Zotero.Repo.SOURCE_REPO)) {
-		// get code
-		return translator.getCode().catch((e) => Zotero.debug(`Failed to retrieve code for ${translator.translatorID}`));
+	try {
+		translator.code = await Zotero.Translators.getCodeForTranslator(translator);
+	} catch (e) {
+		Zotero.debug(`Failed to retrieve code for ${translator.translatorID}`)
 	}
-});
+	return translator.code;
+};
 
-Zotero.Translators.CodeGetter.prototype.getAll = function () {
-	var codes = [];
+Zotero.Translators.CodeGetter.prototype.getAll = async function () {
+	let codes = [];
 	// Chain promises with some level of concurrency. If unchained, fires 
 	// off hundreds of xhttprequests on connectors and crashes the extension
 	for (let i = 0; i < this._translators.length; i++) {
@@ -354,3 +168,7 @@ Zotero.Translators.CodeGetter.prototype.getAll = function () {
 	}
 	return Promise.all(codes);
 };
+
+if (typeof process === 'object' && process + '' === '[object process]'){
+	module.exports = Zotero.Translators;
+}

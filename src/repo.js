@@ -26,138 +26,55 @@
 Zotero.Repo = new function() {
 	var _nextCheck;
 	var _timeoutID;
-	const infoRe = /^\s*{[\S\s]*?}\s*?[\r\n]/;
-	
-	this.SOURCE_ZOTERO_STANDALONE = 1;
-	this.SOURCE_REPO = 2;
-	
-	/**
-	 * Try to retrieve translator metadata from Zotero Standalone and initialize repository check
-	 * timer
-	 */
-	this.init = new function() {
-		var promise;
-		return function() {
-			if (promise) return promise;
-			// update from standalone, but only cascade to repo if we are overdue
-			// TODO: make update/cascade to repo explicit
-			promise = _updateFromRepo(true);
-			return promise.catch(() => 0).then(() => promise = null);
-		}
-	};
-	
-	/**
-	 * Force updating translators
-	 */
-	var update = this.update = function(reset) {
-		return _updateFromRepo(true, reset);
-	};
+	this.infoRe = /^\s*{[\S\s]*?}\s*?[\r\n]/;
 	
 	/**
 	 * Get translator code from repository
+	 * 
 	 * @param {String} translatorID ID of the translator to retrieve code for
+	 * @returns {Promise<String>} full translator code
 	 */
-	this.getTranslatorCode = Zotero.Promise.method(function (translatorID, debugMode) {
-		// try repo
-		let url = `${ZOTERO_CONFIG.REPOSITORY_URL}code/${translatorID}?version=${Zotero.version}`;
-		// TODO: reject promise on failure (needs update to zotero/zotero)
-		return Zotero.HTTP.request("GET", url).then(function(xmlhttp) {
-			return Zotero.Promise.all([
-				_haveCode(xmlhttp.responseText, translatorID),
-				Zotero.Repo.SOURCE_REPO
-			]);
-		}, function() {
-			return Zotero.Promise.all([
-				_haveCode(false, translatorID),
-				Zotero.Repo.SOURCE_REPO
-			]);
-		});	
-	});
-	
-	/**
-	 * Called when code has been retrieved from standalone or repo
-	 */
-	function _haveCode(code, translatorID) {
-		if(!code) {
-			Zotero.logError(new Error("Code could not be retrieved for " + translatorID));
-			return false;
-		}
-		
-		code = Zotero.Translator.replaceDeprecatedStatements(code);
-		
-		var m = infoRe.exec(code);
-		if (!m) {
-			Zotero.logError(new Error("Invalid or missing translator metadata JSON object for " + translatorID));
-			return false;
-		}
-		
+	this.getTranslatorCode = async function (translatorID) {
+		let code;
 		try {
-			var metadata = JSON.parse(m[0]);
+			let url = `${ZOTERO_CONFIG.REPOSITORY_URL}code/${translatorID}?version=${Zotero.version}`;
+			let xmlhttp = await Zotero.HTTP.request("GET", url);
+			code = xmlhttp.responseText;
+		}
+		catch (e) {
+			throw new Error("Repo: Code could not be retrieved for " + translatorID + "\n" + e.message);
+		}
+		
+		var m = this.infoRe.exec(code);
+		if (!m) {
+			throw new Error("Repo: Invalid or missing translator metadata JSON object for " + translatorID);
+		}
+		try {
+			JSON.parse(m[0]);
 		} catch(e) {
-			Zotero.logError(new Error("Invalid or missing translator metadata JSON object for " + translatorID));
-			return false;
+			throw new Error("Repo: Invalid or missing translator metadata JSON object for " + translatorID);
 		}
-		
-		var translator = Zotero.Translators.getWithoutCode(translatorID);
-		
-		if(metadata.lastUpdated !== translator.lastUpdated) {
-			if(Zotero.Date.sqlToDate(metadata.lastUpdated) > Zotero.Date.sqlToDate(translator.lastUpdated)) {
-				Zotero.debug("Repo: Retrieved code for "+metadata.label+" newer than stored metadata; updating");
-				Zotero.Translators.update([metadata]);
-			} else {
-				Zotero.debug("Repo: Retrieved code for "+metadata.label+" older than stored metadata; not caching");
-			}
-		}
+
 		return code;
-	}
-	
+	};
+
 	/**
-	 * Retrieve metadata from repository
+	 * Retrieves all translator metadata. The parameter is a timestamp since the
+	 * last retrieval, in which case only metadata for changed translators is
+	 * returned.
+	 * 
+	 * @param since {Number} timestamp in seconds
+	 * @returns {Promise<Object>}
 	 */
-	function _updateFromRepo(reset) {
-		var url = ZOTERO_CONFIG.REPOSITORY_URL + "metadata?version=" + Zotero.version + "&last="+
-				(reset ? "0" : Zotero.Prefs.get("connector.repo.lastCheck.repoTime"));
-		
-		return Zotero.HTTP.request('GET', url).then(function(xmlhttp) {
-			var date = xmlhttp.getResponseHeader("Date");
-			Zotero.Prefs.set("connector.repo.lastCheck.repoTime", Math.floor(Date.parse(date)/1000));
-			_handleResponse(JSON.parse(xmlhttp.responseText), reset);
-			return true;
-		}, function() {
-			_handleResponse(false, reset);
-			return false;
-		});
-	}
-	
-	/**
-	 * Handle response from Zotero Standalone or repository and set timer for next update
-	 */
-	function _handleResponse(result, reset) {
-		// set up timer
-		var now = Date.now();
-		
-		if(result) {
-			Zotero.Translators.update(result, reset);
-			Zotero.Prefs.set("connector.repo.lastCheck.localTime", now);
-			Zotero.debug("Repo: Check succeeded");
-		} else {
-			Zotero.debug("Repo: Check failed");
+	this.getAllTranslatorMetadata = async (since=0) => {
+		var url = ZOTERO_CONFIG.REPOSITORY_URL + "metadata?version=" + Zotero.version + "&last="+ since;
+
+		try {
+			let xmlhttp = await Zotero.HTTP.request('GET', url);
+			return JSON.parse(xmlhttp.responseText);
 		}
-		
-		if(result || _nextCheck <= now) {
-			// if we failed a scheduled check, then use retry interval
-			_nextCheck = now+(result
-				? ZOTERO_CONFIG.REPOSITORY_CHECK_INTERVAL
-				: ZOTERO_CONFIG.REPOSITORY_RETRY_INTERVAL)*1000;
-		} else if(_timeoutID) {
-			// if we didn't fail a scheduled check and another is already scheduled, leave it
-			return;
+		catch (e) {
+			throw new Error("Repo: Failed to retrieve all translator metadata\n" + e.message);
 		}
-		
-		// remove old timeout and create a new one
-		if(_timeoutID) clearTimeout(_timeoutID);
-		var nextCheckIn = (_nextCheck-now+2000);
-		_timeoutID = setTimeout(update, nextCheckIn);
-		Zotero.debug("Repo: Next check in "+nextCheckIn);
-	}
+	};
 }
