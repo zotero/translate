@@ -16,10 +16,6 @@
  * but otherwise we'll stick to this code as it works for our purposes
  */
 
-if (typeof process === 'object' && process + '' === '[object process]'){
-	var Zotero = require('../zotero');
-}
-
 var $rdf = {
 	Util: {
 		ArrayIndexOf: function (arr, item, i) {
@@ -42,6 +38,7 @@ var $rdf = {
 };
 
 if (typeof process === 'object' && process + '' === '[object process]'){
+	module.exports = $rdf;
 	$rdf.Util = require('./uri');
 	$rdf = Object.assign($rdf, require('./term'));
 	$rdf.IndexedFormula = require('./identity');
