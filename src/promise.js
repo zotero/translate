@@ -35,13 +35,14 @@ Zotero.Promise.method = function(fn) {
 		try {
 			var val = fn.apply(this, arguments);
 			var promise;
+			let isResolved = false;
 			if (val && val.then) {
 				promise = val;
 			} else {
 				promise = Promise.resolve(val);
+				isResolved = true;
 			}
 			if (typeof promise.isResolved === 'undefined') {
-				let isResolved = false;
 				promise.then(() => isResolved = true);
 				promise.isResolved = () => isResolved;
 			}
