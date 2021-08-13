@@ -12,8 +12,8 @@ A consumer of this repository needs to implement the following interfaces:
 
 You also need to:
 - Call `Zotero.Schema.init(data)` with Zotero `schema.json`.
-- If running in a ModuleJS environment (e.g. Node.js) call `require('./cachedTypes').setTypeSchema(typeSchema)` 
-with the result of `resource/zoteroTypeSchemaData.js`.
+- If running in a ModuleJS environment (e.g. Node.js) call `require('../utilities/cachedTypes').setTypeSchema(typeSchema)`
+with the result of `utilities/resource/zoteroTypeSchemaData.js`.
 
 Please bundle translators and Zotero schema with the translation architecture.
 Do not load them from a remote server.
