@@ -131,7 +131,7 @@ Zotero.HTTP = new function() {
 				}
 			}	
 			
-			let invalidDefaultStatus = options.successCodes === null &&
+			let invalidDefaultStatus = options.successCodes === null && !xmlhttp.responseURL.startsWith("file://") &&
 				(xmlhttp.status < 200 || xmlhttp.status >= 300);
 			let invalidStatus = Array.isArray(options.successCodes) && !options.successCodes.includes(xmlhttp.status);
 			if (invalidDefaultStatus || invalidStatus) {
