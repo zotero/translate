@@ -12,6 +12,7 @@ A consumer of this repository needs to implement the following interfaces:
 
 You also need to:
 - Call `Zotero.Schema.init(data)` with Zotero `schema.json`.
+- Call `Zotero.Date.init(json)` with the JSON from `utilities/resource/dateFormats.json`
 - If running in a ModuleJS environment (e.g. Node.js) call `require('../utilities/cachedTypes').setTypeSchema(typeSchema)`
 with the result of `utilities/resource/zoteroTypeSchemaData.js`.
 
