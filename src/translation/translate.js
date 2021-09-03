@@ -665,7 +665,7 @@ Zotero.Translate.Sandbox = {
 						// Shortened: <marquee>This is my <font color=red>AWESOME</font> website
 						// Closed:    <marquee>This is my <font color=red>AWESOME</font> website
 
-						const openingTags = {
+						const tagPairs = {
 							'<i>': '</i>',
 							'<b>': '</b>',
 							'<sub>': '</sub>',
@@ -677,8 +677,8 @@ Zotero.Translate.Sandbox = {
 						let stack = [];
 
 						for (let token of title.split(/(<[^>]+>)/)) {
-							if (openingTags.hasOwnProperty(token)) {
-								stack.push(openingTags[token]);
+							if (tagPairs.hasOwnProperty(token)) {
+								stack.push(tagPairs[token]);
 							}
 							else if (token === stack[stack.length - 1]) {
 								stack.pop();
