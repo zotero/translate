@@ -617,28 +617,80 @@ Zotero.Translate.Sandbox = {
 				}
 				
 				// create short title
-				if(item.shortTitle === undefined && Zotero.Utilities.fieldIsValidForType("shortTitle", item.itemType)) {		
+				if (item.shortTitle === undefined && Zotero.Utilities.fieldIsValidForType("shortTitle", item.itemType)) {
 					// only set if changes have been made
 					var setShortTitle = false;
 					var title = item.title;
 					
 					// shorten to before first colon
 					var index = title.indexOf(":");
-					if(index !== -1) {
+					if (index !== -1) {
 						title = title.substr(0, index);
 						setShortTitle = true;
 					}
 					// shorten to after first question mark
 					index = title.indexOf("?");
-					if(index !== -1) {
+					if (index !== -1) {
 						index++;
-						if(index != title.length) {
+						if (index != title.length) {
 							title = title.substr(0, index);
 							setShortTitle = true;
 						}
 					}
 					
-					if(setShortTitle) item.shortTitle = title;
+					if (setShortTitle) {
+						// Close unclosed tags in the short title.
+
+						// Original:  Review of <i>Conflict in a Buddhist Society: Tibet under the Dalai Lamas</i>
+						// Shortened: Review of <i>Conflict in a Buddhist Society
+						// Closed:    Review of <i>Conflict in a Buddhist Society</i>
+
+						// Original:  Fearing Fear: <i>The War of the Worlds</i> and Disaster Coverage
+						// Shortened: Fearing Fear
+						// Closed:    Fearing Fear
+
+						// Original:  Review of <span class="nocase">ibn Battuta's Tuḥfat an-Nuẓẓār: Precolonial Agency Against the Carceral State</span>
+						// Shortened: Review of <span class="nocase">ibn Battuta's Tuḥfat an-Nuẓẓār
+						// Closed:    Review of <span class="nocase">ibn Battuta's Tuḥfat an-Nuẓẓār</span>
+
+						// Nested tags are supported:
+
+						// Original:  Low text <sup><b>and high, bold text:</b></sup> More text
+						// Shortened: Low text <sup><b>and high, bold text
+						// Closed:    Low text <sup><b>and high, bold text</b></sup>
+
+						// Tags unsupported by Zotero will not be closed:
+
+						// Original:  <marquee>This is my <font color=red>AWESOME</font> website:</marquee>
+						// Shortened: <marquee>This is my <font color=red>AWESOME</font> website
+						// Closed:    <marquee>This is my <font color=red>AWESOME</font> website
+
+						const openingTags = {
+							'<i>': '</i>',
+							'<b>': '</b>',
+							'<sub>': '</sub>',
+							'<sup>': '</sup>',
+							'<span style="font-variant:small-caps;">': '</span>',
+							'<span class="nocase">': '</span>'
+						};
+
+						let stack = [];
+
+						for (let token of title.split(/(<[^>]+>)/)) {
+							if (openingTags.hasOwnProperty(token)) {
+								stack.push(openingTags[token]);
+							}
+							else if (token === stack[stack.length - 1]) {
+								stack.pop();
+							}
+						}
+
+						while (stack.length) {
+							title += stack.pop();
+						}
+
+						item.shortTitle = title;
+					}
 				}
 				
 				/* Clean up ISBNs
