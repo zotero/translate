@@ -278,7 +278,45 @@ Zotero.Utilities.Translate.prototype.processDocuments = async function (urls, pr
 	}
 	
 	translate.decrementAsyncProcesses("Zotero.Utilities.Translate#processDocuments");
-}
+};
+
+Zotero.Utilities.Translate.prototype.request = async function (url, options = {}) {
+	url = this._translate.resolveURL(url);
+
+	let method = options.method || 'GET';
+
+	let internalOptions = {
+		headers: Object.assign({}, this._translate.requestHeaders, options.headers),
+		body: options.body,
+		responseCharset: options.responseCharset,
+		responseType: options.responseType,
+		cookieSandbox: this._translate.cookieSandbox
+	};
+
+	let xhr = await Zotero.HTTP.request(method, url, internalOptions);
+	let status = xhr.status;
+	let headers = {};
+	xhr.getAllResponseHeaders()
+		.trim()
+		.split(/[\r\n]+/)
+		.map(line => line.split(': '))
+		.forEach(parts => headers[parts.shift()] = parts.join(': '));
+	let body = xhr.response;
+
+	return {
+		status,
+		headers,
+		body
+	};
+};
+
+Zotero.Utilities.Translate.prototype.requestJSON = function (url, options = {}) {
+	return this.request(url, { ...options, responseType: 'json' });
+};
+
+Zotero.Utilities.Translate.prototype.requestDocument = function (url, options = {}) {
+	return this.request(url, { ...options, responseType: 'document' });
+};
 
 /**
 * Send an HTTP GET request via XMLHTTPRequest

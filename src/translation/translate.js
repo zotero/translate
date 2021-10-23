@@ -352,7 +352,7 @@ Zotero.Translate.Sandbox = {
 			};
 			
 			var translatorsHandlerSet = false;
-			safeTranslator.getTranslators = function() {
+			safeTranslator.getTranslators = async function () {
 				if(!translation._handlers["translators"] || !translation._handlers["translators"].length) {
 					throw new Error('Translator must register a "translators" handler to '+
 						'call getTranslators() in this translation environment.');
@@ -367,7 +367,7 @@ Zotero.Translate.Sandbox = {
 			};
 			
 			var doneHandlerSet = false;
-			safeTranslator.translate = function() {
+			safeTranslator.translate = async function () {
 				translate.incrementAsyncProcesses("safeTranslator#translate()");
 				setDefaultHandlers(translate, translation);
 				if(!doneHandlerSet) {
@@ -378,7 +378,7 @@ Zotero.Translate.Sandbox = {
 					errorHandlerSet = true;
 					translation.setHandler("error", function(obj, error) { translate.complete(false, error) });
 				}
-				translation.translate(false);
+				return translation.translate(false);
 			};
 			
 			safeTranslator.getTranslatorObject = function(callback) {
@@ -1358,8 +1358,7 @@ Zotero.Translate.Base.prototype = {
 					null,
 					this._getParameters()
 				);
-				// doImport can return a promise to allow for incremental saves (via promise-returning
-				// item.complete() calls)
+
 				if (maybePromise) {
 					maybePromise
 						.then(() => this.decrementAsyncProcesses("Zotero.Translate#translate()"))
@@ -1713,19 +1712,20 @@ Zotero.Translate.Base.prototype = {
 	/**
 	 * Runs detect code for a translator
 	 */
-	"_detectTranslatorLoaded":function() {
+	_detectTranslatorLoaded: async function () {
 		this._prepareDetection();
 		
 		this.incrementAsyncProcesses("Zotero.Translate#getTranslators");
-		
-		try {
-			var returnValue = Function.prototype.apply.call(this._sandboxManager.sandbox["detect"+this._entryFunctionSuffix], null, this._getParameters());
-		} catch(e) {
-			this.complete(false, e);
-			return;
-		}
-		
-		if(returnValue !== undefined) this._returnValue = returnValue;
+
+		var maybePromise = Function.prototype.apply.call(
+			this._sandboxManager.sandbox["detect" + this._entryFunctionSuffix],
+			null,
+			this._getParameters()
+		);
+		// If detect* returns a promise, wait for it
+		var returnValue = (maybePromise && maybePromise.then) ? await maybePromise : maybePromise;
+
+		if (returnValue !== undefined) this._returnValue = returnValue;
 		this.decrementAsyncProcesses("Zotero.Translate#getTranslators");
 	},
 	
@@ -1857,6 +1857,9 @@ Zotero.Translate.Base.prototype = {
 			this._sandboxManager.sandbox.attr = this._attr.bind(this);
 			this._sandboxManager.sandbox.text = this._text.bind(this);
 			this._sandboxManager.sandbox.innerText = this._innerText.bind(this);
+			this._sandboxManager.sandbox.request = this._sandboxZotero.Utilities.request.bind(this._sandboxZotero.Utilities);
+			this._sandboxManager.sandbox.requestJSON = this._sandboxZotero.Utilities.requestJSON.bind(this._sandboxZotero.Utilities);
+			this._sandboxManager.sandbox.requestDocument = this._sandboxZotero.Utilities.requestDocument.bind(this._sandboxZotero.Utilities);
 		}
 	},
 	
