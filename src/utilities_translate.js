@@ -310,12 +310,16 @@ Zotero.Utilities.Translate.prototype.request = async function (url, options = {}
 	};
 };
 
-Zotero.Utilities.Translate.prototype.requestJSON = function (url, options = {}) {
-	return this.request(url, { ...options, responseType: 'json' });
+Zotero.Utilities.Translate.prototype.requestText = async function (url, options = {}) {
+	return (await this.request(url, { ...options, responseType: 'text' })).body;
 };
 
-Zotero.Utilities.Translate.prototype.requestDocument = function (url, options = {}) {
-	return this.request(url, { ...options, responseType: 'document' });
+Zotero.Utilities.Translate.prototype.requestJSON = async function (url, options = {}) {
+	return (await this.request(url, { ...options, responseType: 'json' })).body;
+};
+
+Zotero.Utilities.Translate.prototype.requestDocument = async function (url, options = {}) {
+	return (await this.request(url, { ...options, responseType: 'document' })).body;
 };
 
 /**

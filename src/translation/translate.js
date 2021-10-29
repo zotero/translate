@@ -1858,6 +1858,7 @@ Zotero.Translate.Base.prototype = {
 			this._sandboxManager.sandbox.text = this._text.bind(this);
 			this._sandboxManager.sandbox.innerText = this._innerText.bind(this);
 			this._sandboxManager.sandbox.request = this._sandboxZotero.Utilities.request.bind(this._sandboxZotero.Utilities);
+			this._sandboxManager.sandbox.requestText = this._sandboxZotero.Utilities.requestText.bind(this._sandboxZotero.Utilities);
 			this._sandboxManager.sandbox.requestJSON = this._sandboxZotero.Utilities.requestJSON.bind(this._sandboxZotero.Utilities);
 			this._sandboxManager.sandbox.requestDocument = this._sandboxZotero.Utilities.requestDocument.bind(this._sandboxZotero.Utilities);
 		}
