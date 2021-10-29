@@ -192,6 +192,8 @@ Zotero.Utilities.Translate.prototype.loadDocument = function(url, succeeded, fai
  * Already documented in Zotero.HTTP, except this optionally takes noCompleteOnError, which prevents
  * the translation process from being cancelled automatically on error, as it is normally. The promise
  * is still rejected on error for handling by the calling function.
+ * @deprecated in Zotero 6.0; prefer requestDocument
+ * @see Zotero.Utilities.Translate#requestDocument
  * @ignore
  */
 Zotero.Utilities.Translate.prototype.processDocuments = async function (urls, processor, noCompleteOnError) {
@@ -358,6 +360,8 @@ Zotero.Utilities.Translate.prototype.requestDocument = async function (url, opti
 /**
 * Send an HTTP GET request via XMLHTTPRequest
 * 
+* @deprecated in Zotero 6.0; prefer request[Text|JSON|Document]
+* @see Zotero.Utilities.Translate#request
 * @param {String|String[]} urls URL(s) to request
 * @param {Function} processor Callback to be executed for each document loaded
 * @param {Function} done Callback to be executed after all documents have been loaded
@@ -418,6 +422,8 @@ Zotero.Utilities.Translate.prototype.doGet = function(urls, processor, done, res
 
 /**
  * Already documented in Zotero.HTTP
+ * @deprecated in Zotero 6.0; prefer request[Text|JSON|Document]
+ * @see Zotero.Utilities.Translate#request
  * @ignore
  */
 Zotero.Utilities.Translate.prototype.doPost = function(url, body, onDone, headers, responseCharset, successCodes) {
