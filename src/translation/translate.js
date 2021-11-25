@@ -3083,13 +3083,14 @@ Zotero.Translate.IO._RDFSandbox.prototype = {
 	"getResourceURI":function(resource) {
 		if(typeof(resource) == "string") return resource;
 		
+		if (resource.uri) return resource.uri;
+		
 		const rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 		var values = this.getStatementsMatching(resource, rdf + 'value');
 		if (values && values.length) {
 			return values[0][2];
 		}
 		
-		if(resource.uri) return resource.uri;
 		if(resource.toNT == undefined) throw new Error("Zotero.RDF: getResourceURI called on invalid resource");
 		return resource.toNT();
 	},
