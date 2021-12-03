@@ -574,6 +574,15 @@ Zotero.Translate.Sandbox = {
 				return items;
 			}
 		},
+
+		/**
+		 * Lets user pick items to put in their library, returning a promise
+		 * @param {Zotero.Translate} translate
+		 * @param {Object} items An set of id => name pairs in object format
+		 */
+		selectItemsAsync: function (translate, items) {
+			return new Promise(resolve => this.selectItems(translate, items, resolve));
+		},
 		
 		/**
 		 * Overloads {@link Zotero.Translate.Sandbox.Base._itemDone} to ensure that no standalone
