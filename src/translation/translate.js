@@ -2562,7 +2562,7 @@ Zotero.Translate.Export.prototype._prepareTranslation = Zotero.Promise.method(fu
 			
 			// For the Note Markdown translator, replace the zotero:// URI scheme in the output if
 			// not the official Zotero app
-			if (this.translator.translatorID == '154c2785-ec83-4c27-8a8a-d27b3a2eded1'
+			if (this.translator.translatorID == '1412e9e2-51e1-42ec-aa35-e036a895534b'
 					&& ZOTERO_CONFIG.ID != 'zotero') {
 				this._io.setDataProcessor((data) => {
 					return data.replace(/zotero:\/\//g, ZOTERO_CONFIG.ID + '://');
