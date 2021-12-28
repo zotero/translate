@@ -381,13 +381,8 @@ Zotero.Translate.Sandbox = {
 				return translation.translate(false);
 			};
 			
-			safeTranslator.getTranslatorObject = function(callback) {
-				if(callback) {
-					translate.incrementAsyncProcesses("safeTranslator#getTranslatorObject()");
-				} else {
-					throw new Error("Translator must pass a callback to getTranslatorObject() to "+
-						"operate in this translation environment.");
-				}
+			safeTranslator.getTranslatorObject = function (callback) {
+				translate.incrementAsyncProcesses("safeTranslator#getTranslatorObject()");
 				
 				var translator = translation.translator[0];
 				translator = typeof translator === "object"
@@ -395,32 +390,39 @@ Zotero.Translate.Sandbox = {
 					: translation._translatorProvider.get(translator);
 				// Zotero.Translators.get returns a value in the client and a promise in connectors
 				// so we normalize the value to a promise here
-				Zotero.Promise.resolve(translator)
-				.then(function(translator) {
-					return translation._loadTranslator(translator)
-				})
-				.then(function() {
-					return translation._prepareTranslation();
-				})
-				.then(function () {
-					setDefaultHandlers(translate, translation);
-					var sandbox = translation._sandboxManager.sandbox;
-					if(!Zotero.Utilities.isEmpty(sandbox.exports)) {
-						sandbox.exports.Zotero = sandbox.Zotero;
-						sandbox = sandbox.exports;
-					} else {
-						translate._debug("COMPAT WARNING: "+translation.translator[0].label+" does "+
-							"not export any properties. Only detect"+translation._entryFunctionSuffix+
-							" and do"+translation._entryFunctionSuffix+" will be available in "+
-							"connectors.");
-					}
-					
-					callback(sandbox);
-					translate.decrementAsyncProcesses("safeTranslator#getTranslatorObject()");
-				}).catch(function(e) {
-					translate.complete(false, e);
-					return;
-				});
+				var promise = Zotero.Promise.resolve(translator)
+					.then(function (translator) {
+						return translation._loadTranslator(translator);
+					})
+					.then(function () {
+						return translation._prepareTranslation();
+					})
+					.then(function () {
+						setDefaultHandlers(translate, translation);
+						var sandbox = translation._sandboxManager.sandbox;
+						if (!Zotero.Utilities.isEmpty(sandbox.exports)) {
+							sandbox.exports.Zotero = sandbox.Zotero;
+							sandbox = sandbox.exports;
+						}
+						else {
+							translate._debug("COMPAT WARNING: " + translation.translator[0].label + " does "
+								+ "not export any properties. Only detect" + translation._entryFunctionSuffix
+								+ " and do" + translation._entryFunctionSuffix + " will be available in "
+								+ "connectors.");
+						}
+						
+						if (callback) callback(sandbox);
+						translate.decrementAsyncProcesses("safeTranslator#getTranslatorObject()");
+
+						return sandbox;
+					})
+					.catch(function (e) {
+						translate.complete(false, e);
+					});
+
+				if (!callback) {
+					return promise;
+				}
 			};
 			
 			return safeTranslator;
