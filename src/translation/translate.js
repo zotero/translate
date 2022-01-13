@@ -256,7 +256,7 @@ Zotero.Translate.Sandbox = {
 		 * Gets a hidden preference that can be defined by hiddenPrefs in translator header
 		 *
 		 * @param {Zotero.Translate} translate
-		 * @param {String} pref Prefernce to be retrieved
+		 * @param {String} pref Preference to be retrieved
 		 */
 		"getHiddenPref":function(translate, pref) {
 			if(typeof(pref) != "string") {
@@ -1453,7 +1453,7 @@ Zotero.Translate.Base.prototype = {
 	 * done() from an asynchronous scraper. Finishes things up and calls callback function(s).
 	 * @param {Boolean|String} returnValue An item type or a boolean true or false
 	 * @param {String|Exception} [error] An error that occurred during translation.
-	 * @returm {String|NULL} The exception serialized to a string, or null if translation
+	 * @return {String|NULL} The exception serialized to a string, or null if translation
 	 *     completed successfully.
 	 */
 	"complete":function(returnValue, error) {

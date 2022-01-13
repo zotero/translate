@@ -6,7 +6,7 @@
  ** Bug: can't serialize  http://data.semanticweb.org/person/abraham-bernstein/rdf
  ** in XML (from mhausenblas)
  */
-// @@@ Check the whole toStr thing tosee whetehr it still makes sense -- tbl
+// @@@ Check the whole toStr thing tosee whether it still makes sense -- tbl
 // 
 
 if (typeof process === 'object' && process + '' === '[object process]'){
@@ -22,7 +22,7 @@ $rdf.Serializer = function () {
       this.keywords = ['a']; // The only one we generate at the moment
       this.prefixchars = "abcdefghijklmnopqustuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
       this.incoming = null; // Array not calculated yet
-      this.formulas = []; // remebering original formulae from hashes 
+      this.formulas = []; // remembering original formulae from hashes 
       this.store = store;
 
       /* pass */
@@ -137,9 +137,9 @@ $rdf.Serializer = function () {
 
     /* This scan is to find out which nodes will have to be the roots of trees
      ** in the serialized form. This will be any symbols, and any bnodes
-     ** which hve more or less than one incoming arc, and any bnodes which have
+     ** which have more or less than one incoming arc, and any bnodes which have
      ** one incoming arc but it is an uninterrupted loop of such nodes back to itself.
-     ** This should be kept linear time with repect to the number of statements.
+     ** This should be kept linear time with respect to the number of statements.
      ** Note it does not use any indexing of the store.
      */
 
@@ -236,9 +236,9 @@ $rdf.Serializer = function () {
         var root = roots[i];
         dummySubjectTree(root, subjects, rootsHash);
     }
-    // dump('Looking for mising bnodes...\n')
+    // dump('Looking for missing bnodes...\n')
     
-// Now in new roots for anythig not acccounted for
+// Now in new roots for anything not acccounted for
 // Now we check for any bndoes which have not been covered.
 // Such bnodes must be in isolated rings of pure bnodes.
 // They each have incoming link of 1.

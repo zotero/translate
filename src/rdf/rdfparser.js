@@ -565,7 +565,7 @@ $rdf.RDFParser = function (store) {
           if(this.base) uri = $rdf.Util.uri.join(uri, this.base);
           this.store.setPrefixForURI(attrs[x].name.slice(6), uri);
         }
-        //		$rdf.log('rdfparser: xml atribute: '+attrs[x].name) //@@
+        //		$rdf.log('rdfparser: xml attribute: '+attrs[x].name) //@@
         element['removeAttributeNode'](attrs[x])
       }
     }
