@@ -488,7 +488,7 @@ __Serializer.prototype.statementsToN3 = function (sts) {
           && sz.defaultNamespace == namesp
           && sz.flags.indexOf('d') < 0) { // d -> suppress default
           if(sz.flags.indexOf('k') >= 0
-            && sz.keyords.indexOf(localid) < 0)
+            && sz.keywords.indexOf(localid) < 0)
             return localid;
           return ':' + localid;
         }
