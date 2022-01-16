@@ -1773,7 +1773,7 @@ Zotero.Translate.Base.prototype = {
 				this._proxy = translator.proxy;
 			}
 		} else {
-			// Use proxys only for web translators
+			// Use proxy only for web translators
 			this._proxy = null;
 		}
 		this._runningAsyncProcesses = 0;
