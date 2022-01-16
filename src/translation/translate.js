@@ -1765,11 +1765,16 @@ Zotero.Translate.Base.prototype = {
 		
 		this._currentTranslator = translator;
 		
-		// Pass on the proxy of the parent translate
-		if (this._parentTranslator) {
-			this._proxy = this._parentTranslator._proxy;
+		if (this.type == 'web') {
+			// Pass on the proxy of the parent translate
+			if (this._parentTranslator) {
+				this._proxy = this._parentTranslator._proxy;
+			} else {
+				this._proxy = translator.proxy;
+			}
 		} else {
-			this._proxy = translator.proxy;
+			// Use proxys only for web translators
+			this._proxy = null;
 		}
 		this._runningAsyncProcesses = 0;
 		this._returnValue = undefined;
