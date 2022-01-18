@@ -23,7 +23,7 @@ $rdf.IndexedFormula = function () {
 
   var owl_ns = "http://www.w3.org/2002/07/owl#";
   // var link_ns = "http://www.w3.org/2007/ont/link#";
-  /* hashString functions are used as array indices. This is done to avoid
+  /* hashString functions are used as array indeces. This is done to avoid
    ** conflict with existing properties of arrays such as length and map.
    ** See issue 139.
    */
@@ -420,9 +420,9 @@ We replace the bigger with the smaller.
   $rdf.IndexedFormula.prototype.removeMany = function (subj, pred, obj, why, limit) {
     //$rdf.log("entering removeMany w/ subj,pred,obj,why,limit = " + subj +", "+ pred+", " + obj+", " + why+", " + limit);
     var sts = this.statementsMatching(subj, pred, obj, why, false);
-    //This is a subtle bug that occurred in updateCenter.js too.
+    //This is a subtle bug that occcured in updateCenter.js too.
     //The fact is, this.statementsMatching returns this.whyIndex instead of a copy of it
-    //but for performance consideration, it's better to just do that
+    //but for perfromance consideration, it's better to just do that
     //so make a copy here.
     var statements = [];
     for(var i = 0; i < sts.length; i++) statements.push(sts[i]);

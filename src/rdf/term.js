@@ -264,13 +264,13 @@ Term.Formula.prototype.list = function (values) {
  **
  ** Variables are placeholders used in patterns to be matched.
  ** In cwm they are symbols which are the formula's list of quantified variables.
- ** In sparl they are not visibly URIs.  Here we compromise, by having
+ ** In sparl they are not visibily URIs.  Here we compromise, by having
  ** a common special base URI for variables. Their names are uris,
- ** but the ? notation has an implicit base uri of 'varid:'
+ ** but the ? nottaion has an implicit base uri of 'varid:'
  */
 
 Term.Variable = function (rel) {
-  this.base = "varid:"; // We deem variable x to be the symbol varid:x 
+  this.base = "varid:"; // We deem variabe x to be the symbol varid:x 
   this.uri = $rdf.Util.uri.join(rel, this.base);
   return this;
 }

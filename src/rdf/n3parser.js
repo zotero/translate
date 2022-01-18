@@ -35,7 +35,7 @@ $rdf.N3Parser = function () {
 
   var pyjslib_slice = function (str, i, j) {
       if(typeof str.slice == 'undefined')
-        throw '@@ missing.js: No .slice function for ' + str + ' of type ' + (typeof str)
+        throw '@@ mising.js: No .slice function for ' + str + ' of type ' + (typeof str)
       if((typeof j == 'undefined') || (j == null)) return str.slice(i);
       return str.slice(i, j) // @ exactly the same spec?
     }
@@ -118,10 +118,10 @@ To DO: See also "@@" in comments
 - Clean up interfaces
 ______________________________________________
 
-Module originally by Dan Connolly, including notation3
+Module originally by Dan Connolly, includeing notation3
 parser and RDF generator. TimBL added RDF stream model
 and N3 generation, replaced stream model with use
-of common store/formula API.  Yosi Scharf developed
+of common store/formula API.  Yosi Scharf developped
 the module, including tests and test harness.
 
 */
@@ -237,7 +237,7 @@ the module, including tests and test harness.
   };
   __SinkParser.prototype.feed = function (octets) {
     /*
-    Feed an octet stream to the parser
+    Feed an octet stream tothe parser
     
     if BadSyntax is raised, the string
     passed in the exception object is the
@@ -583,7 +583,7 @@ the module, including tests and test harness.
     /*
     Parse the <node> production.
     Space is now skipped once at the beginning
-    instead of in multiple calls to self.skipSpace().
+    instead of in multipe calls to self.skipSpace().
     */
 
     var subj = subjectAlready;
@@ -850,7 +850,7 @@ the module, including tests and test harness.
     res has things found appended
     
     Used to use a final value of the function to be called, e.g. this.bareWord
-    but passing the function didn't work for js conversion pyjs
+    but passing the function didn't work fo js converion pyjs
     */
 
     var i = this.skipSpace(str, j);
@@ -1055,7 +1055,7 @@ the module, including tests and test harness.
     var j = (j + 1);
     var i = j;
     if(("0123456789-".indexOf(str.charAt(j)) >= 0)) {
-      throw BadSyntax(this._thisDoc, this.lines, str, j, (("Variable name can't start with '" + str.charAt(j)) + "s'"));
+      throw BadSyntax(this._thisDoc, this.lines, str, j, (("Varible name can't start with '" + str.charAt(j)) + "s'"));
       return -1;
     }
     while((i < pyjslib_len(str)) && (_notNameChars.indexOf(str.charAt(i)) < 0)) {

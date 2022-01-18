@@ -24,7 +24,7 @@ var $rdf = {
 		},
 		RDFArrayRemove: function (a, x) { //removes all statements equal to x from a
 			for (var i = 0; i < a.length; i++) {
-				//TODO: This used to be the following, which didn't always work..why
+				//TODO: This used to be the following, which didnt always work..why
 				//if(a[i] == x)
 				if (a[i].subject.sameTerm(x.subject) && a[i].predicate.sameTerm(x.predicate) && a[i].object.sameTerm(x.object) && a[i].why.sameTerm(x.why)) {
 					a.splice(i, 1);
