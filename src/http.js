@@ -117,6 +117,27 @@ Zotero.HTTP = new function() {
 		});
 		return true;	
 	};
+
+
+	/**
+	 * Load one or more documents
+	 *
+	 * @param {String|String[]} urls - URL(s) of documents to load
+	 * @param {Function} processor - Callback to be executed for each document loaded
+	 * @param {Object} options.headers Headers object
+	 * @param {CookieJar} options.cookieSandbox Cookie sandbox object
+	 * @return {Promise<Array>} - A promise for an array of results from the processor runs
+	 */
+	this.processDocuments = async function (urls, processor, options = {}) {
+		// Handle old signature: urls, processor, onDone, onError
+		if (arguments.length > 3) {
+			Zotero.debug("Zotero.HTTP.processDocuments() now takes only 2 arguments -- update your code");
+			var onDone = arguments[3];
+			var onError = arguments[4];
+		}
+
+		throw new Error(`Zotero.HTTP.processDocuments(): not implemented`);
+	};
 };
 
 if (typeof process === 'object' && process + '' === '[object process]'){
