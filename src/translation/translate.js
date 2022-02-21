@@ -2696,6 +2696,11 @@ Zotero.Translate.Search.prototype.complete = function(returnValue, error) {
 		if(error) Zotero.debug(this._generateErrorString(error), 3);
 		if(this.translator.length > 1) {
 			this.translator.shift();
+			// reset async processes and propagate them to parent
+			if(this._parentTranslator && this._runningAsyncProcesses) {
+				this._parentTranslator.decrementAsyncProcesses("Zotero.Translate.Search#complete", this._runningAsyncProcesses);
+			}
+			this._runningAsyncProcesses = 0;
 			this.translate({
 				libraryID: this._libraryID,
 				saveAttachments: this._saveAttachments,
