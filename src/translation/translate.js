@@ -2507,7 +2507,8 @@ Zotero.Translate.Export.prototype._prepareTranslation = Zotero.Promise.method(fu
 	this._itemGetter.legacy = Zotero.Utilities.semverCompare('4.0.27', this._translatorInfo.minVersion) > 0;
 	
 	var configOptions = this._translatorInfo.configOptions || {},
-		getCollections = configOptions.getCollections || false;
+		getCollections = configOptions.getCollections || false,
+		getAnnotations = configOptions.getAnnotations || false;
 	var loadPromise = Zotero.Promise.resolve();
 	switch (this._export.type) {
 		case 'collection':
@@ -2541,7 +2542,8 @@ Zotero.Translate.Export.prototype._prepareTranslation = Zotero.Promise.method(fu
 				this.location,
 				this.translator[0].target,
 				{
-					includeAnnotations: this._displayOptions.includeAnnotations
+					includeAnnotations: this._displayOptions.includeAnnotations,
+					passAnnotationsToTranslator: getAnnotations
 				}
 			);
 		}
