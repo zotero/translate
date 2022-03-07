@@ -118,6 +118,19 @@ Zotero.HTTP = new function() {
 		return true;	
 	};
 
+	/**
+	 * Return a proxied Document object with a location field, and optionally
+	 * a defaultView field. This method makes an XHR-loaded document resemble
+	 * a document loaded in a browser to ensure compatibility with
+	 * Translate.setTranslator() and other translation methods and translators.
+	 *
+	 * @param {Document} doc
+	 * @param {String} docURL
+	 * @return {Document}
+	 */
+	this.wrapDocument = function (doc, docURL) {
+		throw new Error('Zotero.HTTP.wrapDocument(): not implemented');
+	};
 
 	/**
 	 * Load one or more documents
