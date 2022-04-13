@@ -40,8 +40,9 @@ Zotero.Translate.SandboxManager.prototype = {
 	 * @param {String} code Code to evaluate
 	 * @param {String[]} functions Functions to import into the sandbox (rather than leaving
 	 *                                 as inner functions)
+	 * @param {String?} path The source path of the code being evaluated
 	 */
-	eval: function(code, functions) {
+	eval: function(code, functions, path) {
 		// delete functions to import
 		for (var i in functions) {
 			delete this.sandbox[functions[i]];
@@ -61,6 +62,10 @@ Zotero.Translate.SandboxManager.prototype = {
 				code += 'this.sandbox.' + functions[i] + ' = ' + functions[i] + ';';
 			} catch (e) {
 			}
+		}
+
+		if (path) {
+			code += `\n//# sourceURL=${encodeURI(path)}\n`;
 		}
 
 		// Eval in a closure
