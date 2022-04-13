@@ -1330,8 +1330,13 @@ Zotero.Translate.Base.prototype = {
 
 			// translate
 			try {
+				let fn = this._sandboxManager.sandbox["do" + this._entryFunctionSuffix];
+				if (!fn) {
+					this.complete(false, new Error(`Translator has no do${this._entryFunctionSuffix} function`));
+				}
+
 				let maybePromise = Function.prototype.apply.call(
-					this._sandboxManager.sandbox["do" + this._entryFunctionSuffix],
+					fn,
 					null,
 					this._getParameters()
 				);
@@ -1694,8 +1699,13 @@ Zotero.Translate.Base.prototype = {
 		
 		this.incrementAsyncProcesses("Zotero.Translate#getTranslators");
 
+		let fn = this._sandboxManager.sandbox["detect" + this._entryFunctionSuffix];
+		if (!fn) {
+			this.complete(false, new Error(`Translator has no detect${this._entryFunctionSuffix} function`));
+		}
+
 		var maybePromise = Function.prototype.apply.call(
-			this._sandboxManager.sandbox["detect" + this._entryFunctionSuffix],
+			fn,
 			null,
 			this._getParameters()
 		);
@@ -1930,7 +1940,11 @@ Zotero.Translate.Base.prototype = {
 	_generateErrorString: function (error) {
 		var errorString = error;
 		if (error.stack && error) {
-			errorString += "\n\n" + error.stack;
+			let stack = error.stack;
+			if (Zotero.isFx) {
+				stack = Zotero.Debug.filterStack(stack);
+			}
+			errorString += "\n\n" + stack;
 		}
 		if (this.path) {
 			errorString += `\nurl => ${this.path}`;
