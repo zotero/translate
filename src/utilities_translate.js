@@ -323,7 +323,7 @@ Zotero.Utilities.Translate.prototype.request = async function (url, options = {}
 		.forEach(parts => headers[parts.shift()] = parts.join(': '));
 	let body = xhr.response;
 
-	if (options.responseType === 'document' && !('location' in body)) {
+	if (options.responseType === 'document' && body && !body.location) {
 		body = Zotero.HTTP.wrapDocument(body, xhr.responseURL);
 	}
 
