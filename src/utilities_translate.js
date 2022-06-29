@@ -54,6 +54,10 @@ Zotero.Utilities.Translate.prototype.strToDate = Zotero.Date.strToDate;
 Zotero.Utilities.Translate.prototype.strToISO = Zotero.Date.strToISO;
 Zotero.Utilities.Translate.prototype.createContextObject = Zotero.OpenURL.createContextObject;
 Zotero.Utilities.Translate.prototype.parseContextObject = Zotero.OpenURL.parseContextObject;
+Zotero.Utilities.Translate.prototype.itemTypeExists = Zotero.Utilities.Item.itemTypeExists;
+Zotero.Utilities.Translate.prototype.itemToCSLJSON = Zotero.Utilities.Item.itemToCSLJSON;
+Zotero.Utilities.Translate.prototype.itemFromCSLJSON = Zotero.Utilities.Item.itemFromCSLJSON;
+Zotero.Utilities.Translate.prototype.itemToLegacyExportFormat = Zotero.Utilities.Item.itemToLegacyExportFormat;
 
 /**
  * Hack to overloads {@link Zotero.Utilities.capitalizeTitle} to allow overriding capitalizeTitles 
