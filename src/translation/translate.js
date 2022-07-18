@@ -480,9 +480,11 @@ Zotero.Translate.Sandbox = {
 				
 				// Some translators pass an array rather than an object to Zotero.selectItems.
 				// This will break messaging outside of Firefox, so we need to fix it.
-				if (Array.isArray(items)) {
+				if (Object.prototype.toString.call(items) === "[object Array]") {
 					translate._debug("WARNING: Zotero.selectItems should be called with an object, not an array");
-					items = Object.entries(items);
+					let itemsObj = {};
+					for (var i in items) itemsObj[i] = items[i];
+					items = itemsObj;
 				}
 				
 				if (translate._selectedItems) {
