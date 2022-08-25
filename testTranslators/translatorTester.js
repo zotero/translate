@@ -417,32 +417,33 @@ Zotero_TranslatorTester.prototype._runTestsRecursively = function(testDoneCallba
 Zotero_TranslatorTester.prototype.fetchPageAndRunTest = function (test, testDoneCallback) {
 	// Scaffold
 	if (Zotero.isFx) {
-		let browser = Zotero.HTTP.loadDocuments(
-			test.url,
-			(doc) => {
-				if (test.defer) {
-					Zotero.debug("Waiting " + (Zotero_TranslatorTester.DEFER_DELAY / 1000)
-						+ " second(s) for page content to settle");
-				}
-				setTimeout(() => {
-					// Use cookies from document in translator HTTP requests
-					this._cookieSandbox = new Zotero.CookieSandbox(null, test.url, doc.cookie);
-					
-					this.runTest(test, doc, function (obj, test, status, message) {
-						Zotero.Browser.deleteHiddenBrowser(browser);
-						testDoneCallback(obj, test, status, message);
-					});
-				}, test.defer ? Zotero_TranslatorTester.DEFER_DELAY : 0);
-			},
-			null,
-			(e) => {
-				Zotero.Browser.deleteHiddenBrowser(browser);
-				testDoneCallback(this, test, "failed", "Translation failed to initialize: " + e);
-			},
-			true
-		);
-		browser.docShell.allowMetaRedirects = true;
-		return
+		const { HiddenBrowser } = ChromeUtils.import("chrome://zotero/content/HiddenBrowser.jsm");
+		(async () => {
+			let browser = await HiddenBrowser.create(test.url, {
+				requireSuccessfulStatus: true,
+				docShell: { allowMetaRedirects: true }
+			});
+			
+			if (test.defer) {
+				Zotero.debug("Waiting " + (Zotero_TranslatorTester.DEFER_DELAY / 1000)
+					+ " second(s) for page content to settle");
+				await Zotero.Promise.delay(Zotero_TranslatorTester.DEFER_DELAY);
+			}
+			
+			let doc = await HiddenBrowser.getDocument(browser);
+			
+			// Use cookies from document in translator HTTP requests
+			this._cookieSandbox = new Zotero.CookieSandbox(null, test.url, doc.cookie);
+
+			this.runTest(test, doc, function (obj, test, status, message) {
+				HiddenBrowser.destroy(browser);
+				testDoneCallback(obj, test, status, message);
+			});
+		})().catch((e) => {
+			HiddenBrowser.destroy(browser);
+			testDoneCallback(this, test, "failed", "Translation failed to initialize: " + e);
+		});
+		return;
 	}
 	
 	if (typeof process === 'object' && process + '' === '[object process]'){
