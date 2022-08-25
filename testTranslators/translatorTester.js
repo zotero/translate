@@ -429,6 +429,10 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = function (test, testDone
 					+ " second(s) for page content to settle");
 				await Zotero.Promise.delay(Zotero_TranslatorTester.DEFER_DELAY);
 			}
+			else {
+				// Wait just a bit for things to settle
+				await Zotero.Promise.delay(100);
+			}
 			
 			let doc = await HiddenBrowser.getDocument(browser);
 			
