@@ -22,9 +22,13 @@ Term.Empty = function () {
 };
 
 Term.Empty.prototype.termType = 'empty';
-Term.Empty.prototype.toString = function () {
-  return "()"
-};
+// fx102: For some reason, setting the toString property directly isn't possible in this context -
+// it behaves as a read-only property. So we'll just override the property descriptor entirely.
+Object.defineProperty(Term.Empty.prototype, 'toString', {
+  value: function () {
+    return "()";
+  }
+});
 Term.Empty.prototype.toNT = Term.Empty.prototype.toString;
 
 Term.Symbol = function (uri) {
@@ -34,9 +38,11 @@ Term.Symbol = function (uri) {
 }
 
 Term.Symbol.prototype.termType = 'symbol';
-Term.Symbol.prototype.toString = function () {
-  return("<" + this.uri + ">");
-};
+Object.defineProperty(Term.Symbol.prototype, 'toString', {
+  value: function () {
+    return("<" + this.uri + ">");
+  }
+});
 Term.Symbol.prototype.toNT = Term.Symbol.prototype.toString;
 
 //  Some precalculated symbols
@@ -67,7 +73,9 @@ Term.BlankNode.prototype.termType = 'bnode';
 Term.BlankNode.prototype.toNT = function () {
   return Term.NTAnonymousNodePrefix + this.id
 };
-Term.BlankNode.prototype.toString = Term.BlankNode.prototype.toNT;
+Object.defineProperty(Term.BlankNode.prototype, 'toString', {
+  value: Term.BlankNode.prototype.toNT
+});
 
 //	Literal
 Term.Literal = function (value, lang, datatype) {
@@ -80,9 +88,11 @@ Term.Literal = function (value, lang, datatype) {
 }
 
 Term.Literal.prototype.termType = 'literal'
-Term.Literal.prototype.toString = function () {
-  return '' + this.value;
-};
+Object.defineProperty(Term.Literal.prototype, 'toString', {
+  value: function () {
+    return '' + this.value;
+  }
+});
 Term.Literal.prototype.toNT = function () {
   var str = this.value
   if(typeof str != 'string') {
@@ -114,12 +124,14 @@ Term.Collection.prototype.toNT = function () {
   return Term.NTAnonymousNodePrefix + this.id
 };
 
-Term.Collection.prototype.toString = function () {
-  var str = '(';
-  for(var i = 0; i < this.elements.length; i++)
-  str += this.elements[i] + ' ';
-  return str + ')';
-};
+Object.defineProperty(Term.Collection.prototype, 'toString', {
+  value: function () {
+    var str = '(';
+    for(var i = 0; i < this.elements.length; i++)
+      str += this.elements[i] + ' ';
+    return str + ')';
+  }
+});
 
 Term.Collection.prototype.append = function (el) {
   this.elements.push(el)
@@ -197,7 +209,9 @@ Term.Statement.prototype.toNT = function () {
   return (this.subject.toNT() + " " + this.predicate.toNT() + " " + this.object.toNT() + " .");
 };
 
-Term.Statement.prototype.toString = Term.Statement.prototype.toNT;
+Object.defineProperty(Term.Statement.prototype, 'toString', {
+  value: Term.Statement.prototype.toNT
+});
 
 //	Formula
 //
@@ -215,7 +229,9 @@ Term.Formula.prototype.termType = 'formula';
 Term.Formula.prototype.toNT = function () {
   return "{" + this.statements.join('\n') + "}"
 };
-Term.Formula.prototype.toString = Term.Formula.prototype.toNT;
+Object.defineProperty(Term.Formula.prototype, 'toString', {
+  value: Term.Formula.prototype.toNT
+});
 
 Term.Formula.prototype.add = function (subj, pred, obj, why) {
   this.statements.push(new Term.Statement(subj, pred, obj, why))
@@ -283,7 +299,9 @@ Term.Variable.prototype.toNT = function () {
   return '?' + this.uri;
 };
 
-Term.Variable.prototype.toString = Term.Variable.prototype.toNT;
+Object.defineProperty(Term.Variable.prototype, 'toString', {
+  value: Term.Variable.prototype.toNT
+});
 Term.Variable.prototype.classOrder = 7;
 
 Term.variable = Term.Formula.prototype.variable = function (name) {
