@@ -1786,7 +1786,8 @@ Zotero.Translate.Base.prototype = {
 				);
 			}
 			catch (e) {
-				Zotero.logError(e);
+				this.complete(false, e);
+				return;
 			}
 			this._translatorInfo = this._sandboxManager.sandbox.ZOTERO_TRANSLATOR_INFO;
 		}.bind(this);
