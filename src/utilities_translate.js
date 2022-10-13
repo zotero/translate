@@ -290,7 +290,7 @@ Zotero.Utilities.Translate.prototype.processDocuments = async function (urls, pr
 * Send an asynchronous HTTP request, returning a promise.
 *
 * @param {string} url URL to request
-* @param {string} [options.method] The method of the request ("GET", "POST", etc.)
+* @param {string} [options.method=GET] The method of the request ("GET", "POST", etc.)
 * @param {object} [options.requestHeaders] HTTP headers to send with the request
 * @param {string} [options.body] The request's body
 * @param {string} [options.responseCharset] The charset the response should be interpreted as
