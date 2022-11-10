@@ -77,7 +77,6 @@ Zotero.Proxies = new function() {
 			for (let i=0; i < hostnameParts.length; i++) {
 				let parts = hostnameParts[i];
 				// If hostnameParts has two entries, then the second one is with replaced hyphens
-				let dotsToHyphens = i == 1;
 				// skip the lowest level subdomain, domain and TLD
 				for (let j=1; j<parts.length-2; j++) {
 					// if a part matches a TLD, everything up to it is probably the true URL
@@ -94,7 +93,7 @@ Zotero.Proxies = new function() {
 							j++;
 						}
 						var proxyHost = parts.slice(j+1).join('.');
-						urlToProxy[properURL] = {scheme: `%h${skippedParts}.${proxyHost}/%p`, dotsToHyphens};
+						urlToProxy[properURL] = {scheme: `%h${skippedParts}.${proxyHost}/%p`};
 					}
 				}
 			}
@@ -159,7 +158,6 @@ Zotero.Proxy = function (json={}) {
 	this.autoAssociate = json.autoAssociate == undefined ? true : !!json.autoAssociate;
 	this.scheme = json.scheme;
 	this.hosts = json.hosts || [];
-	this.dotsToHyphens = !!json.dotsToHyphens;
 	if (this.scheme) {
 		// Loading from storage or new
 		this.compileRegexp();
@@ -174,7 +172,7 @@ Zotero.Proxy.prototype.toJSON = function() {
 	if (!this.scheme) {
 		throw Error('Cannot convert proxy to JSON - no scheme');
 	}
-	return {id: this.id, scheme: this.scheme, dotsToHyphens: this.dotsToHyphens};
+	return {id: this.id, scheme: this.scheme};
 };
 
 
@@ -270,8 +268,7 @@ Zotero.Proxy.prototype.toProper = function(m) {
 	
 	// Replace `-` with `.` in https to support EZProxy HttpsHyphens.
 	// Potentially troublesome with domains that contain dashes
-	if (this.dotsToHyphens ||
-		(this.dotsToHyphens == undefined && scheme == "https://") ||
+	if (scheme == "https://" ||
 		!properURL.includes('.')) {
 		properURL = properURL.replace(/-/g, '.');
 	}
@@ -307,7 +304,7 @@ Zotero.Proxy.prototype.toProxy = function(uri) {
 		var param = this.parameters[i];
 		var value = "";
 		if (param == "%h") {
-			value = (this.dotsToHyphens && uri.protocol == 'https:') ? uri.hostname.replace(/\./g, '-') : uri.hostname;
+			value = uri.protocol == 'https:' ? uri.hostname.replace(/\./g, '-') : uri.hostname;
 		} else if (param == "%p") {
 			value = uri.pathname.substr(1);
 		} else if (param == "%d") {
