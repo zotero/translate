@@ -43,7 +43,7 @@ Zotero.Promise.method = function(fn) {
 				isResolved = true;
 			}
 			if (typeof promise.isResolved === 'undefined') {
-				promise.then(() => isResolved = true);
+				promise.then(() => isResolved = true, () => 0);
 				promise.isResolved = () => isResolved;
 			}
 			return promise;
