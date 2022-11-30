@@ -1514,8 +1514,12 @@ Zotero.Translate.Base.prototype = {
 				this._debug("Translation successful");
 			} else {
 				if(error) {
-					// report error to console
-					Zotero.logError(error);
+					if (!this._parentTranslator) {
+						// store in error log if it's the root translator,
+						// otherwise it's up to the root translator whether it wants to
+						// log an error or not in this case
+						Zotero.logError(error);
+					}
 					
 					// report error to debug log
 					this._debug("Translation using "+(this.translator && this.translator[0] && this.translator[0].label ? this.translator[0].label : "no translator")+" failed: \n"+errorString, 2);
