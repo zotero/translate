@@ -1676,21 +1676,20 @@ Zotero.Translate.Base.prototype = {
 	/**
 	 * Begins running detect code for a translator, first loading it
 	 */
-	"_detect":function() {
+	_detect: async function() {
 		// there won't be any translators if we need an RPC call
 		if(!this._potentialTranslators.length) {
 			this.complete(true);
-			return;
+			return null;
 		}
 		
-		let lab = this._potentialTranslators[0].label;
-		this._loadTranslator(this._potentialTranslators[0])
-		.then(function() {
-			return this._detectTranslatorLoaded();
-		}.bind(this))
-		.catch(function (e) {
+		try {
+			await this._loadTranslator(this._potentialTranslators[0]);
+			return await this._detectTranslatorLoaded();
+		}
+		catch (e) {
 			this.complete(false, e);
-		}.bind(this));
+		}
 	},
 	
 	/**
@@ -1716,6 +1715,8 @@ Zotero.Translate.Base.prototype = {
 
 		if (returnValue !== undefined) this._returnValue = returnValue;
 		this.decrementAsyncProcesses("Zotero.Translate#getTranslators");
+		
+		return returnValue;
 	},
 	
 	/**

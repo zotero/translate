@@ -547,15 +547,34 @@ Zotero_TranslatorTester.prototype.runTest = function(test, doc, testDoneCallback
  * Runs translation for a translator, given a document to test against
  */
 Zotero_TranslatorTester.prototype._runTestTranslate = function(translate, translators, test, testDoneCallback) {
-	if(!translators.length) {
-		testDoneCallback(this, test, "failed", "Detection failed");
+	if (!translators.length) {
+		if (test.detectedItemType === false) {
+			testDoneCallback(this, test, "succeeded", "Test succeeded");
+		}
+		else {
+			testDoneCallback(this, test, "failed", "Detection failed");
+		}
 		return;
-	} else if(this.type === "web" && translators[0].itemType !== Zotero.Translator.RUN_MODE_ZOTERO_SERVER
-			&& (translators[0].itemType !== "multiple" && test.items.length > 1 ||
-			test.items.length === 1 && translators[0].itemType !== test.items[0].itemType)) {
-				// this handles "items":"multiple" too, since the string has length 8
-		testDoneCallback(this, test, "failed", "Detection returned wrong item type");
-		return;
+	}
+	else if (this.type === "web" && translators[0].itemType !== Zotero.Translator.RUN_MODE_ZOTERO_SERVER) {
+		let expected;
+		if (test.detectedItemType !== undefined) {
+			expected = test.detectedItemType;
+		}
+		else if (test.items.length === 1) {
+			expected = test.items[0].itemType;
+		}
+		else if (test.items.length > 1) {
+			expected = "multiple";
+		}
+		else {
+			testDoneCallback(this, test, "failed", "No items specified in test");
+			return;
+		}
+		if (translators[0].itemType !== expected) {
+			testDoneCallback(this, test, "failed", "Detection returned wrong item type");
+			return;
+		}
 	}
 	
 	translate.setTranslator(this.translator);
@@ -631,12 +650,13 @@ Zotero_TranslatorTester.prototype._checkResult = function(test, translate, retur
  * Creates a new test for a document
  * @param {Document} doc DOM document to test against
  * @param {Function} testReadyCallback A callback to be passed test (as object) when complete
+ * @param {() => (Promise<Boolean> | Boolean)} detectionFailedCallback A callback to be called when detection fails.
+ * 		Allows the user to decide whether to continue creating an expected-fail test.
  */
-Zotero_TranslatorTester.prototype.newTest = function(doc, testReadyCallback) {
+Zotero_TranslatorTester.prototype.newTest = async function (doc, testReadyCallback, detectionFailedCallback) {
 	// keeps track of whether select was called
 	var multipleMode = false;
 	
-	var me = this;
 	var translate = Zotero.Translate.newInstance(this.type);
 	if (this.translatorProvider) {
 		translate.setTranslatorProvider(this.translatorProvider);
@@ -650,6 +670,25 @@ Zotero_TranslatorTester.prototype.newTest = function(doc, testReadyCallback) {
 			doc.cookie
 		));
 	}
+	
+	// internal hack to call detect on this translator
+	translate._potentialTranslators = [this.translator];
+	translate._foundTranslators = [];
+	translate._currentState = "detect";
+	let detectResult = await translate._detect();
+	if (!detectResult) {
+		if (!(await detectionFailedCallback())) {
+			return;
+		}
+		testReadyCallback(this,
+			{
+				type: this.type,
+				url: translate.document.location.href,
+				detectedItemType: false,
+				items: [],
+			});
+	}
+	
 	translate.setTranslator(this.translator);
 	translate.setHandler("debug", this._debug);
 	translate.setHandler("select", function(obj, items, callback) {
@@ -667,7 +706,7 @@ Zotero_TranslatorTester.prototype.newTest = function(doc, testReadyCallback) {
 		
 		callback(newItems);
 	});
-	translate.setHandler("done", function(obj, returnValue) { me._createTest(obj, multipleMode, returnValue, testReadyCallback) });
+	translate.setHandler("done", (obj, returnValue) => this._createTest(obj, detectResult, multipleMode, returnValue, testReadyCallback));
 	translate.capitalizeTitles = false;
 	translate.translate({
 		libraryID: false
@@ -677,9 +716,12 @@ Zotero_TranslatorTester.prototype.newTest = function(doc, testReadyCallback) {
 /**
  * Creates a new test for a document
  * @param {Zotero.Translate} translate The Zotero.Translate instance
- * @param {Function} testDoneCallback A callback to be passed test (as object) when complete
+ * @param {String | false} detectResult
+ * @param {Boolean} multipleMode
+ * @param {Object} returnValue
+ * @param {Function} testReadyCallback A callback to be passed test (as object) when complete
  */
-Zotero_TranslatorTester.prototype._createTest = function(translate, multipleMode, returnValue, testReadyCallback) {
+Zotero_TranslatorTester.prototype._createTest = function(translate, detectResult, multipleMode, returnValue, testReadyCallback) {
 	if(!returnValue) {
 		testReadyCallback(returnValue);
 		return;
@@ -699,8 +741,13 @@ Zotero_TranslatorTester.prototype._createTest = function(translate, multipleMode
 		var items = translate.newItems;
 	}
 	
-	testReadyCallback(this, {"type":this.type, "url":translate.document.location.href,
-		"items":items});
+	testReadyCallback(this,
+		{
+			type: this.type,
+			url: translate.document.location.href,
+			detectedItemType: detectResult,
+			items: items,
+		});
 };
 
 
