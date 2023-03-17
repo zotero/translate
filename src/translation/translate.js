@@ -1798,14 +1798,14 @@ Zotero.Translate.Base.prototype = {
 		}.bind(this);
 		
 		if (this.noWait) {
-			let codePromise = Zotero.Translators.getCodeForTranslator(translator);
+			let codePromise = this._translatorProvider.getCodeForTranslator(translator);
 			if (!codePromise.isResolved()) {
 				throw new Error("Code promise is not resolved in noWait mode");
 			}
 			parse(codePromise.value());
 		}
 		else {
-			return Zotero.Translators.getCodeForTranslator(translator).then(parse);
+			return this._translatorProvider.getCodeForTranslator(translator).then(parse);
 		}
 	}),
 	
