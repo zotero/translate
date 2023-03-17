@@ -1113,7 +1113,7 @@ Zotero.Translate.Base.prototype = {
 				if(t) promises.push(t);
 			}
 			if(!promises.length) return Zotero.Promise.reject(new Error("getTranslators: no valid translators were set"));
-			potentialTranslators = Zotero.Promise.all(promises);
+			potentialTranslators = Zotero.Promise.all(promises).then(val => [val]);
 		} else {
 			potentialTranslators = this._getTranslatorsGetPotentialTranslators();
 		}
