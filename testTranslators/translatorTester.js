@@ -414,16 +414,15 @@ Zotero_TranslatorTester.prototype._runTestsRecursively = function(testDoneCallba
  * @param {Object} test - Test to execute
  * @param {Function} testDoneCallback - A callback to be executed when test is complete
  */
-Zotero_TranslatorTester.prototype.fetchPageAndRunTest = function (test, testDoneCallback) {
+Zotero_TranslatorTester.prototype.fetchPageAndRunTest = async function (test, testDoneCallback) {
 	// Scaffold
 	if (Zotero.isFx) {
 		const { HiddenBrowser } = ChromeUtils.import("chrome://zotero/content/HiddenBrowser.jsm");
-		(async () => {
-			let browser = await HiddenBrowser.create(test.url, {
-				requireSuccessfulStatus: true,
-				docShell: { allowMetaRedirects: true }
-			});
-			
+		let browser = await HiddenBrowser.create(test.url, {
+			requireSuccessfulStatus: true,
+			docShell: { allowMetaRedirects: true }
+		});
+		try {
 			if (test.defer) {
 				Zotero.debug("Waiting " + (Zotero_TranslatorTester.DEFER_DELAY / 1000)
 					+ " second(s) for page content to settle");
@@ -434,19 +433,18 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = function (test, testDone
 				await Zotero.Promise.delay(100);
 			}
 			
-			let doc = await HiddenBrowser.getDocument(browser);
-			
-			// Use cookies from document in translator HTTP requests
-			this._cookieSandbox = new Zotero.CookieSandbox(null, test.url, doc.cookie);
-
-			this.runTest(test, doc, function (obj, test, status, message) {
-				HiddenBrowser.destroy(browser);
-				testDoneCallback(obj, test, status, message);
-			});
-		})().catch((e) => {
+			let translate = new Zotero.RemoteTranslate.Web();
+			await translate.setBrowser(browser);
+			await translate.setTranslatorProvider(this.translatorProvider);
+			translate.setHandler("debug", (_, obj) => this._debug(this, obj));
+			translate.setHandler("error", (_, err) => this._debug(this, err));
+			let { test: newTest, status, message } = await translate.runTest(this.translator, test);
+			translate.dispose();
+			testDoneCallback(this, newTest, status, message);
+		}
+		finally {
 			HiddenBrowser.destroy(browser);
-			testDoneCallback(this, test, "failed", "Translation failed to initialize: " + e);
-		});
+		}
 		return;
 	}
 	
@@ -614,6 +612,11 @@ Zotero_TranslatorTester.prototype._checkResult = function(test, translate, retur
 		testDoneCallback(this, test, "failed", "Translation failed; examine debug output for errors");
 		return;
 	}
+
+	// Save items. This makes it easier to correct tests automatically.
+	test.itemsReturned = test.items === "multiple"
+		? "multiple"
+		: translate.newItems.map(item => Zotero_TranslatorTester._sanitizeItem(item));
 	
 	if(!translate.newItems.length) {
 		testDoneCallback(this, test, "failed", "Translation failed: no items returned");
@@ -634,14 +637,6 @@ Zotero_TranslatorTester.prototype._checkResult = function(test, translate, retur
 				// Show diff
 				this._debug(this, "TranslatorTester: Data mismatch detected:");
 				this._debug(this, Zotero_TranslatorTester._generateDiff(testItem, translatedItem));
-				
-				// Save items. This makes it easier to correct tests automatically.
-				var m = translate.newItems.length;
-				test.itemsReturned = new Array(m);
-				for(var j=0; j<m; j++) {
-					test.itemsReturned[j] = Zotero_TranslatorTester._sanitizeItem(translate.newItems[i]);
-				}
-				
 				testDoneCallback(this, test, "unknown", "Item "+i+" does not match");
 				return;
 			}
@@ -668,7 +663,7 @@ Zotero_TranslatorTester.prototype.newTest = async function (doc, testReadyCallba
 	}
 	translate.setDocument(doc);
 	// Use cookies from document
-	if (doc.cookie) {
+	if (doc.cookie && Zotero.CookieSandbox) {
 		translate.setCookieSandbox(new Zotero.CookieSandbox(
 			null,
 			doc.location.href,

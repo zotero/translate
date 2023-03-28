@@ -1720,6 +1720,16 @@ Zotero.Translate.Base.prototype = {
 		if (returnValue !== undefined) this._returnValue = returnValue;
 		this.decrementAsyncProcesses("Zotero.Translate#getTranslators");
 		
+		// If the translator started an async process in detect* (like loading another translator),
+		// wait for it in the promise we return
+		if (this._runningAsyncProcesses) {
+			return new Promise((resolve, reject) => {
+				this.setHandler('translators', () => resolve(this._returnValue));
+				this.setHandler('error', (_, err) => reject(err));
+			});
+		}
+		
+		// Otherwise, immediately return what detect* returned
 		return returnValue;
 	},
 	
