@@ -436,9 +436,10 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = async function (test, te
 			let translate = new Zotero.RemoteTranslate.Web();
 			await translate.setBrowser(browser);
 			await translate.setTranslatorProvider(this.translatorProvider);
+			translate.setTranslator(this.translator);
 			translate.setHandler("debug", (_, obj) => this._debug(this, obj));
 			translate.setHandler("error", (_, err) => this._debug(this, err));
-			let { test: newTest, status, message } = await translate.runTest(this.translator, test);
+			let { test: newTest, status, message } = await translate.runTest(test);
 			translate.dispose();
 			testDoneCallback(this, newTest, status, message);
 		}
