@@ -422,6 +422,7 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = async function (test, te
 			requireSuccessfulStatus: true,
 			docShell: { allowMetaRedirects: true }
 		});
+		let translate = new Zotero.RemoteTranslate.Web();
 		try {
 			if (test.defer) {
 				Zotero.debug("Waiting " + (Zotero_TranslatorTester.DEFER_DELAY / 1000)
@@ -433,7 +434,6 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = async function (test, te
 				await Zotero.Promise.delay(100);
 			}
 			
-			let translate = new Zotero.RemoteTranslate.Web();
 			await translate.setBrowser(browser);
 			await translate.setTranslatorProvider(this.translatorProvider);
 			translate.setTranslator(this.translator);
@@ -445,6 +445,7 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = async function (test, te
 		}
 		finally {
 			HiddenBrowser.destroy(browser);
+			translate.dispose();
 		}
 		return;
 	}
