@@ -418,11 +418,12 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = async function (test, te
 	// Scaffold
 	if (Zotero.isFx) {
 		const { HiddenBrowser } = ChromeUtils.import("chrome://zotero/content/HiddenBrowser.jsm");
+		const { RemoteTranslate } = ChromeUtils.import("chrome://zotero/content/RemoteTranslate.jsm");
 		let browser = await HiddenBrowser.create(test.url, {
 			requireSuccessfulStatus: true,
 			docShell: { allowMetaRedirects: true }
 		});
-		let translate = new Zotero.RemoteTranslate.Web();
+		let translate = new RemoteTranslate();
 		try {
 			if (test.defer) {
 				Zotero.debug("Waiting " + (Zotero_TranslatorTester.DEFER_DELAY / 1000)
