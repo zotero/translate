@@ -741,13 +741,18 @@ Zotero_TranslatorTester.prototype._createTest = function(translate, detectResult
 		var items = translate.newItems;
 	}
 	
-	testReadyCallback(this,
-		{
-			type: this.type,
-			url: translate.document.location.href,
-			detectedItemType: detectResult,
-			items: items,
-		});
+	let testObject = {
+		type: this.type,
+		url: translate.document.location.href,
+		detectedItemType: detectResult,
+		items,
+	};
+	// Delete detectedItemType if it matches items
+	if (items === 'multiple' && detectResult === 'multiple'
+			|| items.length == 1 && detectResult === items[0].itemType) {
+		delete testObject.detectedItemType;
+	}
+	testReadyCallback(this, testObject);
 };
 
 
