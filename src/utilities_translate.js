@@ -312,7 +312,8 @@ Zotero.Utilities.Translate.prototype.request = async function (url, options = {}
 		body: options.body,
 		responseCharset: options.responseCharset,
 		responseType: options.responseType,
-		cookieSandbox: this._translate.cookieSandbox
+		cookieSandbox: this._translate.cookieSandbox,
+		timeout: this._translate.requestTimeout,
 	};
 
 	// If the request fails or a non-2XX status is returned, Zotero.HTTP.request rejects its promise.
@@ -426,6 +427,9 @@ Zotero.Utilities.Translate.prototype.doGet = function(urls, processor, done, res
 			translate.complete(false, e);
 		}
 	}, responseCharset, this._translate.cookieSandbox, Object.assign({}, this._translate.requestHeaders, requestHeaders));
+	if (translate.requestTimeout !== 0) {
+		xmlhttp.timeout = translate.requestTimeout || xmlhttp.timeout || 30000;
+	}
 }
 
 /**
@@ -461,6 +465,9 @@ Zotero.Utilities.Translate.prototype.doPost = function(url, body, onDone, header
 			translate.complete(false, e);
 		}
 	}, Object.assign({}, translate.requestHeaders, headers), responseCharset, translate.cookieSandbox ? translate.cookieSandbox : undefined);
+	if (translate.requestTimeout !== 0) {
+		xmlhttp.timeout = translate.requestTimeout || xmlhttp.timeout || 30000;
+	}
 }
 
 Zotero.Utilities.Translate.prototype.urlToProxy = function(url) {
