@@ -1113,7 +1113,7 @@ Zotero.Translate.Base.prototype = {
 				if(t) promises.push(t);
 			}
 			if(!promises.length) return Zotero.Promise.reject(new Error("getTranslators: no valid translators were set"));
-			potentialTranslators = Zotero.Promise.all(promises);
+			potentialTranslators = Zotero.Promise.all(promises).then(val => [val]);
 		} else {
 			potentialTranslators = this._getTranslatorsGetPotentialTranslators();
 		}
@@ -1720,6 +1720,16 @@ Zotero.Translate.Base.prototype = {
 		if (returnValue !== undefined) this._returnValue = returnValue;
 		this.decrementAsyncProcesses("Zotero.Translate#getTranslators");
 		
+		// If the translator started an async process in detect* (like loading another translator),
+		// wait for it in the promise we return
+		if (this._runningAsyncProcesses) {
+			return new Promise((resolve, reject) => {
+				this.setHandler('translators', () => resolve(this._returnValue));
+				this.setHandler('error', (_, err) => reject(err));
+			});
+		}
+		
+		// Otherwise, immediately return what detect* returned
 		return returnValue;
 	},
 	
@@ -1798,14 +1808,14 @@ Zotero.Translate.Base.prototype = {
 		}.bind(this);
 		
 		if (this.noWait) {
-			let codePromise = Zotero.Translators.getCodeForTranslator(translator);
+			let codePromise = this._translatorProvider.getCodeForTranslator(translator);
 			if (!codePromise.isResolved()) {
 				throw new Error("Code promise is not resolved in noWait mode");
 			}
 			parse(codePromise.value());
 		}
 		else {
-			return Zotero.Translators.getCodeForTranslator(translator).then(parse);
+			return this._translatorProvider.getCodeForTranslator(translator).then(parse);
 		}
 	}),
 	
