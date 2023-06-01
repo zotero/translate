@@ -395,12 +395,12 @@ Zotero_TranslatorTester.prototype._runTestsRecursively = function(testDoneCallba
 	if(this.type === "web") {
 		this.fetchPageAndRunTest(test, callback);
 	} else {
-		(Zotero.setTimeout ? Zotero : window).setTimeout(function() {
+		setTimeout(function() {
 			me.runTest(test, null, callback);
 		}, 0);
 	}
 	
-	(Zotero.setTimeout ? Zotero : window).setTimeout(function() {
+	setTimeout(function() {
 		callback(me, test, "failed", "Test timed out after "+TEST_RUN_TIMEOUT/1000+" seconds");
 	}, TEST_RUN_TIMEOUT);
 };
