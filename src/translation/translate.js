@@ -1788,22 +1788,16 @@ Zotero.Translate.Base.prototype = {
 		var parse = function(code) {
 			Zotero.debug("Translate: Parsing code for " + translator.label + " "
 				+ "(" + translator.translatorID + ", " + translator.lastUpdated + ")", 4);
-			try {
-				this._sandboxManager.eval(
-					"var exports = {}, ZOTERO_TRANSLATOR_INFO = " + code,
-					[
-						"detect" + this._entryFunctionSuffix,
-						"do" + this._entryFunctionSuffix,
-						"exports",
-						"ZOTERO_TRANSLATOR_INFO"
-					],
-					(translator.file ? translator.file.path : translator.label)
-				);
-			}
-			catch (e) {
-				this.complete(false, e);
-				return;
-			}
+			this._sandboxManager.eval(
+				"var exports = {}, ZOTERO_TRANSLATOR_INFO = " + code,
+				[
+					"detect" + this._entryFunctionSuffix,
+					"do" + this._entryFunctionSuffix,
+					"exports",
+					"ZOTERO_TRANSLATOR_INFO"
+				],
+				(translator.file ? translator.file.path : translator.label)
+			);
 			this._translatorInfo = this._sandboxManager.sandbox.ZOTERO_TRANSLATOR_INFO;
 		}.bind(this);
 		
