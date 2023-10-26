@@ -1788,22 +1788,22 @@ Zotero.Translate.Base.prototype = {
 		var parse = function(code) {
 			Zotero.debug("Translate: Parsing code for " + translator.label + " "
 				+ "(" + translator.translatorID + ", " + translator.lastUpdated + ")", 4);
-			try {
-				this._sandboxManager.eval(
-					"var exports = {}, ZOTERO_TRANSLATOR_INFO = " + code,
-					[
-						"detect" + this._entryFunctionSuffix,
-						"do" + this._entryFunctionSuffix,
-						"exports",
-						"ZOTERO_TRANSLATOR_INFO"
-					],
-					(translator.file ? translator.file.path : translator.label)
-				);
-			}
-			catch (e) {
-				this.complete(false, e);
-				return;
-			}
+			// This might throw but it's better than catching and calling complete(false) here
+			// since then other execution paths are not aware of this failing and continue running
+			// at least in Import translation detection, causing weird race conditions.
+			// The code that calls this function (which is really only code in this file)
+			// should expect a throw and call complete(false) after catching.
+			this._sandboxManager.eval(
+				"var exports = {}, ZOTERO_TRANSLATOR_INFO = " + code,
+				[
+					"detect" + this._entryFunctionSuffix,
+					"do" + this._entryFunctionSuffix,
+					"exports",
+					"ZOTERO_TRANSLATOR_INFO"
+				],
+				(translator.file ? translator.file.path : translator.label)
+			);
+			
 			this._translatorInfo = this._sandboxManager.sandbox.ZOTERO_TRANSLATOR_INFO;
 		}.bind(this);
 		
