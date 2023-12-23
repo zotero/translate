@@ -419,10 +419,10 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = async function (test, te
 	if (Zotero.isFx) {
 		const { HiddenBrowser } = ChromeUtils.import("chrome://zotero/content/HiddenBrowser.jsm");
 		const { RemoteTranslate } = ChromeUtils.import("chrome://zotero/content/RemoteTranslate.jsm");
-		let browser = await HiddenBrowser.create(test.url, {
-			requireSuccessfulStatus: true,
+		let browser = new HiddenBrowser({
 			docShell: { allowMetaRedirects: true }
 		});
+		await browser.load(test.url, { requireSuccessfulStatus: true });
 		let translate = new RemoteTranslate();
 		try {
 			if (test.defer) {
@@ -445,7 +445,7 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = async function (test, te
 			testDoneCallback(this, newTest, status, message);
 		}
 		finally {
-			HiddenBrowser.destroy(browser);
+			browser.destroy();
 			translate.dispose();
 		}
 		return;
