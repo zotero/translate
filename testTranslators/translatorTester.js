@@ -423,7 +423,7 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = async function (test, te
 			docShell: { allowMetaRedirects: true }
 		});
 		await browser.load(test.url, { requireSuccessfulStatus: true });
-		let translate = new RemoteTranslate();
+		let translate = new RemoteTranslate({ disableErrorReporting: true });
 		try {
 			if (test.defer) {
 				Zotero.debug("Waiting " + (Zotero_TranslatorTester.DEFER_DELAY / 1000)
