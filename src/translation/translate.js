@@ -105,12 +105,11 @@ Zotero.Translate.Sandbox = {
 					"seeAlso"
 				];
 				
-				// Create a new object here, so that we strip the "complete" property
+				// Create a new object here, normalizing properties with object values
 				var newItem = {};
-				var oldItem = item;
-				for(var i in item) {
+				for (let i in item) {
 					var val = item[i];
-					if(i === "complete" || (!val && val !== 0)) continue;
+					if(!val && val !== 0) continue;
 					
 					var type = typeof val;
 					var isObject = type === "object" || type === "xml" || type === "function",
@@ -334,7 +333,14 @@ Zotero.Translate.Sandbox = {
 						try {
 							item = item.wrappedJSObject ? item.wrappedJSObject : item;
 							if(arg1 == "itemDone") {
-								item.complete = translate._sandboxZotero.Item.prototype.complete;
+								Object.defineProperty(
+									item,
+									"complete",
+									{
+										value: translate._sandboxZotero.Item.prototype.complete,
+										enumerable: false,
+									}
+								);
 							}
 							arg2(obj, item);
 						} catch(e) {
@@ -1825,29 +1831,17 @@ Zotero.Translate.Base.prototype = {
 	"_generateSandbox":function() {
 		Zotero.debug("Translate: Binding sandbox to "+(typeof this._sandboxLocation == "object" ? this._sandboxLocation.document.location : this._sandboxLocation), 4);
 		this._sandboxManager = new Zotero.Translate.SandboxManager(this._sandboxLocation);
-		const createArrays = "['creators', 'notes', 'tags', 'seeAlso', 'attachments']";
-		var src = "";
-		src += "Zotero.Item = function (itemType) {"+
-				"var createArrays = "+createArrays+";"+
-				"this.itemType = itemType;"+
-				"for(var i=0, n=createArrays.length; i<n; i++) {"+
-					"this[createArrays[i]] = [];"+
-				"}"+
-		"};";
 		
-		if(this instanceof Zotero.Translate.Export || this instanceof Zotero.Translate.Import) {
-			src += "Zotero.Collection = function () {};"+
-			"Zotero.Collection.prototype.complete = function() { return Zotero._collectionDone(this); };";
-		}
-		
-		src += "Zotero.Item.prototype.complete = function() { return Zotero._itemDone(this); }";
-
-		this._sandboxManager.eval(src);
 		this._sandboxManager.importObject(this.Sandbox, this);
 		this._sandboxManager.importObject({"Utilities":new Zotero.Utilities.Translate(this)});
 
 		this._sandboxZotero = this._sandboxManager.sandbox.Zotero;
 
+		this._sandboxZotero.Item = this._makeSandboxItem();
+		if (this instanceof Zotero.Translate.Export || this instanceof Zotero.Translate.Import) {
+			this._sandboxZotero.Collection = this._makeSandboxCollection();
+		}
+		
 		this._sandboxZotero.Utilities.HTTP = this._sandboxZotero.Utilities;
 		
 		this._sandboxZotero.isBookmarklet = Zotero.isBookmarklet || false;
@@ -1860,7 +1854,6 @@ Zotero.Translate.Base.prototype = {
 		// create shortcuts
 		this._sandboxManager.sandbox.Z = this._sandboxZotero;
 		this._sandboxManager.sandbox.ZU = this._sandboxZotero.Utilities;
-		this._transferItem = this._sandboxZotero._transferItem;
 		
 		// Add helper functions
 		if (this.type == 'web' || this.type == 'search') {
@@ -1931,6 +1924,52 @@ Zotero.Translate.Base.prototype = {
 			? docOrElem.querySelectorAll(selector).item(index)
 			: docOrElem.querySelector(selector);
 		return (elem ? elem.innerText : "").trim();
+	},
+
+	_makeSandboxItem() {
+		let sandboxZotero = this._sandboxZotero;
+		if (!sandboxZotero) {
+			throw new Error('Sandbox must be initialized');
+		}
+		
+		return class {
+			itemType;
+
+			creators = [];
+
+			notes = [];
+
+			tags = [];
+
+			seeAlso = [];
+
+			attachments = [];
+
+			constructor(itemType) {
+				this.itemType = itemType;
+			}
+
+			setExtra(field, value) {
+				this.extra = (this.extra ? this.extra + '\n' : '') + `${field}: ${value}`;
+			}
+
+			complete() {
+				return sandboxZotero._itemDone(this);
+			}
+		};
+	},
+	
+	_makeSandboxCollection() {
+		let sandboxZotero = this._sandboxZotero;
+		if (!sandboxZotero) {
+			throw new Error('Sandbox must be initialized');
+		}
+		
+		return class {
+			complete() {
+				return sandboxZotero._collectionDone(this);
+			}
+		};
 	},
 	
 	/**
