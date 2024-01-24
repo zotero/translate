@@ -1950,7 +1950,15 @@ Zotero.Translate.Base.prototype = {
 			}
 
 			setExtra(field, value) {
-				this.extra = (this.extra ? this.extra + '\n' : '') + `${field}: ${value}`;
+				let lines = String(this.extra || '').split('\n');
+				let existingIndex = lines.findIndex(line => line.startsWith(field + ': '));
+				if (existingIndex !== -1) {
+					lines[existingIndex] = `${field}: ${value}`;
+				}
+				else {
+					lines.push(`${field}: ${value}`);
+				}
+				this.extra = lines.join('\n');
 			}
 
 			complete() {
