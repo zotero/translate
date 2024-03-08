@@ -422,7 +422,13 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = async function (test, te
 		let browser = new HiddenBrowser({
 			docShell: { allowMetaRedirects: true }
 		});
-		await browser.load(test.url, { requireSuccessfulStatus: true });
+		try {
+			await browser.load(test.url, { requireSuccessfulStatus: true });
+		}
+		catch (e) {
+			testDoneCallback(this, test, "failed", "Failed to load page: " + e);
+			return;
+		}
 		let translate = new RemoteTranslate({ disableErrorReporting: true });
 		try {
 			if (test.defer) {
