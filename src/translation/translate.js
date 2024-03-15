@@ -1341,6 +1341,7 @@ Zotero.Translate.Base.prototype = {
 				let fn = this._sandboxManager.sandbox["do" + this._entryFunctionSuffix];
 				if (!fn) {
 					this.complete(false, new Error(`Translator has no do${this._entryFunctionSuffix} function`));
+					return;
 				}
 
 				let maybePromise = Function.prototype.apply.call(
@@ -1713,6 +1714,7 @@ Zotero.Translate.Base.prototype = {
 		let fn = this._sandboxManager.sandbox["detect" + this._entryFunctionSuffix];
 		if (!fn) {
 			this.complete(false, new Error(`Translator has no detect${this._entryFunctionSuffix} function`));
+			return null;
 		}
 
 		var maybePromise = Function.prototype.apply.call(
