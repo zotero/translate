@@ -639,31 +639,7 @@ Zotero.Translate.Sandbox = {
 					}
 					
 					if (setShortTitle) {
-						// Close unclosed tags in the short title.
-
-						// Original:  Review of <i>Conflict in a Buddhist Society: Tibet under the Dalai Lamas</i>
-						// Shortened: Review of <i>Conflict in a Buddhist Society
-						// Closed:    Review of <i>Conflict in a Buddhist Society</i>
-
-						// Original:  Fearing Fear: <i>The War of the Worlds</i> and Disaster Coverage
-						// Shortened: Fearing Fear
-						// Closed:    Fearing Fear
-
-						// Original:  Review of <span class="nocase">ibn Battuta's Tuḥfat an-Nuẓẓār: Precolonial Agency Against the Carceral State</span>
-						// Shortened: Review of <span class="nocase">ibn Battuta's Tuḥfat an-Nuẓẓār
-						// Closed:    Review of <span class="nocase">ibn Battuta's Tuḥfat an-Nuẓẓār</span>
-
-						// Nested tags are supported:
-
-						// Original:  Low text <sup><b>and high, bold text:</b></sup> More text
-						// Shortened: Low text <sup><b>and high, bold text
-						// Closed:    Low text <sup><b>and high, bold text</b></sup>
-
-						// Tags unsupported by Zotero will not be closed:
-
-						// Original:  <marquee>This is my <font color=red>AWESOME</font> website:</marquee>
-						// Shortened: <marquee>This is my <font color=red>AWESOME</font> website
-						// Closed:    <marquee>This is my <font color=red>AWESOME</font> website
+						// Close unclosed tags in the short title
 
 						const tagPairs = {
 							'<i>': '</i>',
