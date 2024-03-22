@@ -617,28 +617,56 @@ Zotero.Translate.Sandbox = {
 				}
 				
 				// create short title
-				if(item.shortTitle === undefined && Zotero.Utilities.fieldIsValidForType("shortTitle", item.itemType)) {		
+				if (item.shortTitle === undefined && Zotero.Utilities.fieldIsValidForType("shortTitle", item.itemType)) {
 					// only set if changes have been made
 					var setShortTitle = false;
 					var title = item.title;
 					
 					// shorten to before first colon
 					var index = title.indexOf(":");
-					if(index !== -1) {
+					if (index !== -1) {
 						title = title.substr(0, index);
 						setShortTitle = true;
 					}
 					// shorten to after first question mark
 					index = title.indexOf("?");
-					if(index !== -1) {
+					if (index !== -1) {
 						index++;
-						if(index != title.length) {
+						if (index != title.length) {
 							title = title.substr(0, index);
 							setShortTitle = true;
 						}
 					}
 					
-					if(setShortTitle) item.shortTitle = title;
+					if (setShortTitle) {
+						// Close unclosed tags in the short title
+
+						const tagPairs = {
+							'<i>': '</i>',
+							'<b>': '</b>',
+							'<sub>': '</sub>',
+							'<sup>': '</sup>',
+							'<span style="font-variant:small-caps;">': '</span>',
+							'<span class="nocase">': '</span>'
+						};
+
+						let stack = [];
+
+						for (let token of title.split(/(<[^>]+>)/)) {
+							if (tagPairs.hasOwnProperty(token)) {
+								stack.push(tagPairs[token]);
+							}
+							else if (token === stack[stack.length - 1]) {
+								stack.pop();
+							}
+						}
+
+						while (stack.length) {
+							title += stack.pop();
+						}
+
+						item.shortTitle = title;
+					}
 				}
 				
 				/* Clean up ISBNs
