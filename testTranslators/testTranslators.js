@@ -425,6 +425,7 @@ async function init() {
 	allOutputView = new OutputView();
 	allOutputView.setDisplayed(true);
 
+	const whenReadyToRun = [];
 	await Promise.all(TRANSLATOR_TYPES.map(async displayType => {
 		let translatorType = displayType.toLowerCase();
 		
@@ -474,7 +475,7 @@ async function init() {
 		// get translators, with code for unsupported translators
 		if(!viewerMode) {
 			let translators = await Zotero.Translators.getAllForType(translatorType, true);
-			haveTranslators(translators, translatorType);
+			whenReadyToRun.push(haveTranslators(translators, translatorType));
 		}
 	}));
 	
@@ -531,6 +532,7 @@ async function init() {
 		translatorBox.appendChild(lastP);
 		
 		// Run translators specified in the hash params if any
+		await Promise.all(whenReadyToRun);
 		runURLSpecifiedTranslators();
 	}
 }
