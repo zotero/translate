@@ -324,7 +324,7 @@ Zotero.Utilities.Translate.prototype.request = async function (url, options = {}
 		.trim()
 		.split(/[\r\n]+/)
 		.map(line => line.split(': '))
-		.forEach(parts => headers[parts.shift()] = parts.join(': '));
+		.forEach(parts => headers[parts.shift().toLowerCase()] = parts.join(': '));
 	let body = xhr.response;
 
 	if (options.responseType === 'document' && body && !body.location) {
