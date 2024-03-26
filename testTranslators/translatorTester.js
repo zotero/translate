@@ -339,6 +339,10 @@ Zotero_TranslatorTester.prototype.serialize = function() {
 	};
 };
 
+Zotero_TranslatorTester.prototype.setCookieSandbox = function (cookieSandbox) {
+	this._cookieSandbox = cookieSandbox;
+};
+
 /**
  * Sets tests for this translatorTester
  */
@@ -420,7 +424,8 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = async function (test, te
 		const { HiddenBrowser } = ChromeUtils.import("chrome://zotero/content/HiddenBrowser.jsm");
 		const { RemoteTranslate } = ChromeUtils.import("chrome://zotero/content/RemoteTranslate.jsm");
 		let browser = new HiddenBrowser({
-			docShell: { allowMetaRedirects: true }
+			docShell: { allowMetaRedirects: true },
+			cookieSandbox: this._cookieSandbox,
 		});
 		try {
 			await browser.load(test.url, { requireSuccessfulStatus: true });
