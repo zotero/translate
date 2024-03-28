@@ -292,6 +292,17 @@ Zotero.Translate.Sandbox = {
 				}
 			}
 			
+			function prepareItemForParent(item) {
+				Object.defineProperty(
+					item,
+					"complete",
+					{
+						value: translate._sandboxZotero.Item.prototype.complete,
+						enumerable: false,
+					}
+				);
+			}
+			
 			if(typeof type !== "string") {
 				throw(new Error("loadTranslator: type must be a string"));
 				return;
@@ -333,14 +344,7 @@ Zotero.Translate.Sandbox = {
 						try {
 							item = item.wrappedJSObject ? item.wrappedJSObject : item;
 							if(arg1 == "itemDone") {
-								Object.defineProperty(
-									item,
-									"complete",
-									{
-										value: translate._sandboxZotero.Item.prototype.complete,
-										enumerable: false,
-									}
-								);
+								prepareItemForParent(item);
 							}
 							arg2(obj, item);
 						} catch(e) {
@@ -372,19 +376,27 @@ Zotero.Translate.Sandbox = {
 				return translation.getTranslators();
 			};
 			
-			var doneHandlerSet = false;
 			safeTranslator.translate = async function () {
 				translate.incrementAsyncProcesses("safeTranslator#translate()");
 				setDefaultHandlers(translate, translation);
-				if(!doneHandlerSet) {
-					doneHandlerSet = true;
-					translation.setHandler("done", function() { translate.decrementAsyncProcesses("safeTranslator#translate()") });
-				}
 				if(!errorHandlerSet) {
 					errorHandlerSet = true;
 					translation.setHandler("error", function(obj, error) { translate.complete(false, error) });
 				}
-				return translation.translate(false);
+				return translation.translate(false)
+					.then((returnValue) => {
+						if (Array.isArray(returnValue)) {
+							returnValue = returnValue.map((item) => {
+								item = item.wrappedJSObject ? item.wrappedJSObject : item;
+								if (item && typeof item.complete === 'function') {
+									prepareItemForParent(item);
+								}
+								return item;
+							});
+						}
+						return returnValue;
+					})
+					.finally(() => translate.decrementAsyncProcesses("safeTranslator#translate()"));
 			};
 			
 			safeTranslator.getTranslatorObject = function (callback) {
