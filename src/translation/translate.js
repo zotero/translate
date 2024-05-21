@@ -2044,12 +2044,8 @@ Zotero.Translate.Base.prototype = {
 		if (this.path) {
 			errorString += `\nurl => ${this.path}`;
 		}
-		if (Zotero.Prefs.get("downloadAssociatedFiles")) {
-			errorString += "\ndownloadAssociatedFiles => true";
-		}
-		if (Zotero.Prefs.get("automaticSnapshots")) {
-			errorString += "\nautomaticSnapshots => true";
-		}
+		errorString += "\nautomaticAttachmentTypes => " + Zotero.Prefs.get("automaticAttachmentTypes");
+		errorString += "\nautomaticAttachmentTypes.order => " + Zotero.Prefs.get("automaticAttachmentTypes.order");
 		return errorString;
 	},
 	
