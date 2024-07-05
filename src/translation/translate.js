@@ -745,6 +745,10 @@ Zotero.Translate.Sandbox = {
 				Zotero.debug("Translate: monitorDOMChanges can only be called during the 'detect' stage");
 				return;
 			}
+			
+			if (!target || !target.nodeName) {
+				throw new Error('Translate.monitorDOMChanges(): target is not a valid Node');
+			}
 
 			var window = translate.document.defaultView
 			var mutationObserver = window && ( window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver );
