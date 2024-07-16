@@ -474,7 +474,7 @@ async function init() {
 		// get translators, with code for unsupported translators
 		if(!viewerMode) {
 			let translators = await Zotero.Translators.getAllForType(translatorType, true);
-			haveTranslators(translators, translatorType);
+			await haveTranslators(translators, translatorType);
 		}
 	}));
 	
