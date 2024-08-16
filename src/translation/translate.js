@@ -2185,7 +2185,8 @@ Zotero.Translate.Web.prototype._prepareTranslation = Zotero.Promise.method(funct
 		sessionID: this._sessionID,
 		cookieSandbox: this._cookieSandbox,
 		proxy: this._proxy,
-		baseURI: this.location
+		baseURI: this.location,
+		localizeAttachmentTitles: true
 	});
 	this.newItems = [];
 });
@@ -2268,7 +2269,8 @@ Zotero.Translate.Web.prototype._translateRPCComplete = async function(obj, failu
 			sessionID: this._sessionID,
 			cookieSandbox: this._cookieSandbox,
 			proxy: this._proxy,
-			baseURI: this.location
+			baseURI: this.location,
+			localizeAttachmentTitles: true
 		});
 		await itemSaver._pollForProgress(obj.items, this._runHandler.bind(this, 'attachmentProgress'));
 		this.complete(true);
