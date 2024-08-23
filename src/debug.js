@@ -25,7 +25,7 @@
 
 Zotero.Debug = new function () {
 	var _console, _store, _level, _lastTime, _output = [];
-	var _slowTime = false;
+	var _slowTime = 1e3;
 	var _consoleViewer = false;
 	
 	/**
@@ -63,9 +63,10 @@ Zotero.Debug = new function () {
 		_lastTime = d;
 		var slowPrefix = "";
 		var slowSuffix = "";
-		if (_slowTime && delta > _slowTime) {
-			slowPrefix = "\x1b[31;40m";
-			slowSuffix = "\x1b[0m";
+		var isSlow = _slowTime && delta > _slowTime
+		if (isSlow) {
+			slowPrefix = "%c";
+			slowSuffix = "%c";
 		}
 		
 		delta = ("" + delta).padStart(7, "0");
@@ -84,7 +85,12 @@ Zotero.Debug = new function () {
 		}
 		
 		var output = '(' + level + ')' + deltaStr + ': ' + message;
-		console.log(output+"\n");
+		if (isSlow) {
+			console.log(output, "color: red;", "");
+		}
+		else {
+			console.log(output);
+		}
 		
 		if (_store) {
 			if (Math.random() < 1/1000) {
