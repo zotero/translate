@@ -580,14 +580,6 @@ Zotero.Translate.Sandbox = {
 					return;
 				}
 				
-				// store library catalog if this item was captured from a website, and
-				// libraryCatalog is truly undefined (not false or "")
-				if(item.repository !== undefined) {
-					Zotero.debug("Translate: 'repository' field is now 'libraryCatalog'; please fix your code", 2);
-					item.libraryCatalog = item.repository;
-					delete item.repository;
-				}
-				
 				// automatically set library catalog
 				if(item.libraryCatalog === undefined && item.itemType != "webpage") {
 					item.libraryCatalog = translate.translator[0].label;
