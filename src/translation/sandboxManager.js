@@ -59,7 +59,7 @@ Zotero.Translate.SandboxManager.prototype = {
 			if (functions[i] == 'detectExport') continue;
 			
 			try {
-				code += 'this.sandbox.' + functions[i] + ' = ' + functions[i] + ';';
+				code += '\nthis.sandbox.' + functions[i] + ' = ' + functions[i] + ';';
 			} catch (e) {
 			}
 		}
