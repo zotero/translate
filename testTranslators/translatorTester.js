@@ -396,8 +396,9 @@ Zotero_TranslatorTester.prototype._runTestsRecursively = function(testDoneCallba
 		me.runTests(testDoneCallback, true);
 	};
 	
+	let abortController = new AbortController();
 	if(this.type === "web") {
-		this.fetchPageAndRunTest(test, callback);
+		this.fetchPageAndRunTest(test, callback, { abort: abortController.signal });
 	} else {
 		setTimeout(function() {
 			me.runTest(test, null, callback);
@@ -405,6 +406,7 @@ Zotero_TranslatorTester.prototype._runTestsRecursively = function(testDoneCallba
 	}
 	
 	setTimeout(function() {
+		abortController.abort();
 		callback(me, test, "failed", "Test timed out after "+TEST_RUN_TIMEOUT/1000+" seconds");
 	}, TEST_RUN_TIMEOUT);
 };
@@ -417,8 +419,9 @@ Zotero_TranslatorTester.prototype._runTestsRecursively = function(testDoneCallba
  *
  * @param {Object} test - Test to execute
  * @param {Function} testDoneCallback - A callback to be executed when test is complete
+ * @param {AbortSignal} [abort]
  */
-Zotero_TranslatorTester.prototype.fetchPageAndRunTest = async function (test, testDoneCallback) {
+Zotero_TranslatorTester.prototype.fetchPageAndRunTest = async function (test, testDoneCallback, { abort } = {}) {
 	// Scaffold
 	if (Zotero.isFx) {
 		const { HiddenBrowser } = ChromeUtils.import("chrome://zotero/content/HiddenBrowser.jsm");
@@ -427,6 +430,11 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = async function (test, te
 			docShell: { allowMetaRedirects: true },
 			cookieSandbox: this._cookieSandbox,
 		});
+		
+		abort?.addEventListener('abort', () => {
+			browser.destroy();
+		});
+		
 		try {
 			await browser.load(test.url, { requireSuccessfulStatus: true });
 		}
