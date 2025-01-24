@@ -242,7 +242,7 @@ var Zotero_TranslatorTester = function(translator, type, debugCallback, translat
 	}
 };
 
-Zotero_TranslatorTester.DEFER_DELAY = 5000; // Delay for deferred tests
+Zotero_TranslatorTester.DEFAULT_DEFER_DELAY = 5; // Default delay for deferred tests (in seconds)
 
 /**
  * Removes document objects, which contain cyclic references, and other fields to be ignored from items
@@ -444,15 +444,7 @@ Zotero_TranslatorTester.prototype.fetchPageAndRunTest = async function (test, te
 		}
 		let translate = new RemoteTranslate({ disableErrorReporting: true });
 		try {
-			if (test.defer) {
-				Zotero.debug("Waiting " + (Zotero_TranslatorTester.DEFER_DELAY / 1000)
-					+ " second(s) for page content to settle");
-				await Zotero.Promise.delay(Zotero_TranslatorTester.DEFER_DELAY);
-			}
-			else {
-				// Wait just a bit for things to settle
-				await Zotero.Promise.delay(100);
-			}
+			await this.waitForDeferDelay(test);
 			
 			await translate.setBrowser(browser);
 			await translate.setTranslatorProvider(this.translatorProvider);
@@ -775,6 +767,23 @@ Zotero_TranslatorTester.prototype._createTest = function(translate, detectResult
 		delete testObject.detectedItemType;
 	}
 	testReadyCallback(this, testObject);
+};
+
+Zotero_TranslatorTester.prototype.waitForDeferDelay = async function (test) {
+	if (!test.defer) {
+		// Wait a little bit for page content to settle
+		await Zotero.Promise.delay(100);
+		return;
+	}
+	let delay;
+	if (typeof test.defer === 'number') {
+		delay = test.defer;
+	}
+	else {
+		delay = Zotero_TranslatorTester.DEFAULT_DEFER_DELAY;
+	}
+	this._debug(this, `Waiting ${delay} ${Zotero.Utilities.pluralize(delay, 'second')} for page content to settle`);
+	await Zotero.Promise.delay(delay * 1000);
 };
 
 
