@@ -771,8 +771,6 @@ Zotero_TranslatorTester.prototype._createTest = function(translate, detectResult
 
 Zotero_TranslatorTester.prototype.waitForDeferDelay = async function (test) {
 	if (!test.defer) {
-		// Wait a little bit for page content to settle
-		await Zotero.Promise.delay(100);
 		return;
 	}
 	let delay;
