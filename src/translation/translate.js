@@ -1985,6 +1985,9 @@ Zotero.Translate.Base.prototype = {
 			}
 
 			setExtra(field, value) {
+				if (typeof value !== 'string' || value === '') {
+					return;
+				}
 				let lines = String(this.extra || '').split('\n');
 				let kebabField = field.replace(/(\s?[A-Z])/g, (_, char) => `-${char.toLowerCase()}`).replace(/_/g, '-').replace(/^-/, '');
 				let kebabTxtFields = Object.keys(Zotero.Schema.CSL_DATE_MAPPINGS).map(textField => textField.replace(/_/g, '-'))
