@@ -224,8 +224,12 @@ var Zotero_TranslatorTester = function(translator, type, debugCallback, translat
 	var testEnd   = code.indexOf("/** END TEST CASES **/"); 
 	if (testStart !== -1 && testEnd !== -1) {
 		var test = code.substring(testStart + 24, testEnd)
+			.trim()
 			.replace(/^[\s\r\n]*var testCases = /, '')
 			.replace(/;[\s\r\n]*$/, '');
+		if (!test) {
+			test = "[]";
+		}
 		try {
 			var testObject = JSON.parse(test);
 		} catch (e) {
