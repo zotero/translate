@@ -1762,7 +1762,7 @@ Zotero.Translate.Base.prototype = {
 		}
 		
 		// Otherwise, immediately return what detect* returned
-		return returnValue;
+		return this._returnValue;
 	},
 	
 	/**
