@@ -95,6 +95,7 @@ Zotero.Translate.Sandbox = {
 				}
 					
 				const allowedObjects = [
+					"setExtra",
 					"complete",
 					"attachments",
 					"creators",
@@ -333,6 +334,14 @@ Zotero.Translate.Sandbox = {
 						try {
 							item = item.wrappedJSObject ? item.wrappedJSObject : item;
 							if(arg1 == "itemDone") {
+								Object.defineProperty(
+									item,
+									"setExtra",
+									{
+										value: translate._sandboxZotero.Item.prototype.setExtra,
+										enumerable: false,
+									}
+								);
 								Object.defineProperty(
 									item,
 									"complete",
@@ -1976,13 +1985,30 @@ Zotero.Translate.Base.prototype = {
 			}
 
 			setExtra(field, value) {
+				if (typeof value !== 'string' || value === '') {
+					return;
+				}
 				let lines = String(this.extra || '').split('\n');
-				let existingIndex = lines.findIndex(line => line.startsWith(field + ': '));
-				if (existingIndex !== -1) {
-					lines[existingIndex] = `${field}: ${value}`;
+				let kebabField = field.replace(/(\s?[A-Z])/g, (_, char) => `-${char.toLowerCase()}`).replace(/_/g, '-').replace(/^-/, '');
+				let kebabTxtFields = Object.keys(Zotero.Schema.CSL_DATE_MAPPINGS).map(textField => textField.replace(/_/g, '-'))
+				let kebabDateFields = Object.keys(Zotero.Schema.CSL_TEXT_MAPPINGS).map(textField => textField.replace(/_/g, '-'))
+				let cslNames = Object.keys(Zotero.Schema.CSL_NAME_MAPPINGS);
+				if (cslNames.includes(kebabField)) {
+					lines.unshift(`${field}: ${value}`);
 				}
 				else {
-					lines.push(`${field}: ${value}`);
+					let existingIndex = lines.findIndex(line => line.startsWith(field + ': '));
+					if (existingIndex !== -1) {
+						lines[existingIndex] = `${field}: ${value}`;
+					}
+					else {
+						if (kebabTxtFields.includes(kebabField) || kebabDateFields.includes(kebabField)) {
+							lines.unshift(`${field}: ${value}`);
+						}
+						else {
+							lines.push(`${field}: ${value}`);
+						}
+					}
 				}
 				this.extra = lines.join('\n');
 			}
