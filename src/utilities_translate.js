@@ -289,36 +289,46 @@ Zotero.Utilities.Translate.prototype.processDocuments = async function (urls, pr
 /**
 * Send an asynchronous HTTP request, returning a promise.
 *
-* @param {string} url URL to request
+* @param {string | URL} url URL to request
 * @param {string} [options.method=GET] The method of the request ("GET", "POST", etc.)
 * @param {object} [options.requestHeaders] HTTP headers to send with the request
 * @param {string} [options.body] The request's body
 * @param {string} [options.responseCharset] The charset the response should be interpreted as
-* @param {string} [options.responseType] 'text', 'json', or 'document'.
+* @param {'' | 'text' | 'json' | 'document'} [options.responseType] Defaults to 'text'.
 * 	If 'json', the response's body will be parsed with JSON.parse before being returned.
 * 	If 'document', the response's body will be parsed as an HTML document (like deprecated processDocuments).
-* @return {Promise<object>} A promise resolved with an object containing status,
-* 	headers, and body attributes if the request succeeds.
-* 	If the browser is offline or the response contains a non-2XX status code,
-* 	the promise will be rejected with a Zotero.HTTP.UnexpectedStatusException.
+* @param {number[] | false} [options.successCodes] Array of allowed response statuses, or false to allow all.
+ * 		request() will throw if the response status is not allowed.
+* @return {Promise<{
+* 	status: number,
+* 	statusText: string,
+* 	responseURL: string,
+* 	headers: Record<string, string>,
+* 	body: string | object | Document,
+* }>}
 */
 Zotero.Utilities.Translate.prototype.request = async function (url, options = {}) {
+	url = String(url);
 	url = this._translate.resolveURL(url);
 
 	let method = options.method || 'GET';
+	let responseType = options.responseType || 'text';
+	if (responseType !== 'text' && responseType !== 'json' && responseType !== 'document') {
+		throw new Error('Unsupported responseType: ' + responseType);
+	}
 
 	let internalOptions = {
 		headers: Object.assign({}, this._translate.requestHeaders, options.headers),
 		body: options.body,
 		responseCharset: options.responseCharset,
-		responseType: options.responseType,
+		responseType,
+		successCodes: options.successCodes,
 		cookieSandbox: this._translate.cookieSandbox
 	};
 
 	// If the request fails or a non-2XX status is returned, Zotero.HTTP.request rejects its promise.
 	// We let the Zotero.HTTP.UnexpectedStatusException bubble up to the caller.
 	let xhr = await Zotero.HTTP.request(method, url, internalOptions);
-	let status = xhr.status;
 	let headers = {};
 	xhr.getAllResponseHeaders()
 		.trim()
@@ -327,12 +337,14 @@ Zotero.Utilities.Translate.prototype.request = async function (url, options = {}
 		.forEach(parts => headers[parts.shift().toLowerCase()] = parts.join(': '));
 	let body = xhr.response;
 
-	if (options.responseType === 'document' && body && !body.location) {
+	if (responseType === 'document' && body && !body.location) {
 		body = Zotero.HTTP.wrapDocument(body, xhr.responseURL);
 	}
 
 	return {
-		status,
+		status: xhr.status,
+		statusText: xhr.statusText,
+		responseURL: xhr.responseURL,
 		headers,
 		body
 	};
