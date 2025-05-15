@@ -301,6 +301,9 @@ Zotero.Translate.Sandbox = {
 			var translation = Zotero.Translate.newInstance(type);
 			translation._parentTranslator = translate;
 			translation.setTranslatorProvider(translate._translatorProvider);
+			if (translation instanceof Zotero.Translate.Web || translation instanceof Zotero.Translate.Search) {
+				translation.setRequestTimeout(translate.requestTimeout);
+			}
 			
 			if(translation instanceof Zotero.Translate.Export && !(translation instanceof Zotero.Translate.Export)) {
 				throw(new Error("Only export translators may call other export translators"));
@@ -2125,6 +2128,15 @@ Zotero.Translate.Web.prototype.setRequestHeaders = function (headers) {
 };
 
 /**
+ * Set a timeout on translator HTTP requests.
+ * @param {Number | null | undefined} requestTimeout Timeout in milliseconds; 0 to disable;
+ * 		null/undefined to use implementation default
+ */
+Zotero.Translate.Web.prototype.setRequestTimeout = function (requestTimeout) {
+	this.requestTimeout = requestTimeout;
+};
+
+/**
  * Sets the location to operate upon
  *
  * @param {String} location The URL of the page to translate
@@ -2703,6 +2715,11 @@ Zotero.Translate.Search.prototype.ERROR_NO_RESULTS = "No items returned from any
  * @borrows Zotero.Translate.Web#setCookieSandbox
  */
 Zotero.Translate.Search.prototype.setCookieSandbox = Zotero.Translate.Web.prototype.setCookieSandbox;
+
+/**
+ * @borrows Zotero.Translate.Web#setRequestTimeout
+ */
+Zotero.Translate.Search.prototype.setRequestTimeout = Zotero.Translate.Web.prototype.setRequestTimeout;
 
 /**
  * Sets the item to be used for searching
