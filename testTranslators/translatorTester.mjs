@@ -121,11 +121,21 @@ export class TranslatorTester {
 		let result;
 		switch (test.type) {
 			case 'web':
-				result = await this._translateWeb(test, { signal: abortController.signal });
+				try {
+					result = await this._translateWeb(test, { signal: abortController.signal });
+				}
+				catch (e) {
+					return { status: 'failure', reason: String(e) };
+				}
 				break;
 			case 'import':
 			case 'search':
-				result = await this._translateImportOrSearch(test, { signal: abortController.signal });
+				try {
+					result = await this._translateImportOrSearch(test, { signal: abortController.signal });
+				}
+				catch (e) {
+					return { status: 'failure', reason: String(e) };
+				}
 				break;
 			case 'export':
 				throw new Error('Export tests are not yet supported');
