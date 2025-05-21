@@ -95,6 +95,7 @@ Zotero.Translate.Sandbox = {
 				}
 					
 				const allowedObjects = [
+					"setExtra",
 					"complete",
 					"attachments",
 					"creators",
@@ -333,6 +334,14 @@ Zotero.Translate.Sandbox = {
 						try {
 							item = item.wrappedJSObject ? item.wrappedJSObject : item;
 							if(arg1 == "itemDone") {
+								Object.defineProperty(
+									item,
+									"setExtra",
+									{
+										value: translate._sandboxZotero.Item.prototype.setExtra,
+										enumerable: false,
+									}
+								);
 								Object.defineProperty(
 									item,
 									"complete",
@@ -1976,13 +1985,42 @@ Zotero.Translate.Base.prototype = {
 			}
 
 			setExtra(field, value) {
+				if (typeof value !== 'string' || value === '') {
+					return;
+				}
 				let lines = String(this.extra || '').split('\n');
-				let existingIndex = lines.findIndex(line => line.startsWith(field + ': '));
-				if (existingIndex !== -1) {
-					lines[existingIndex] = `${field}: ${value}`;
+				function toKebabCase(str) {
+					return str
+						.replace(/[_ ]/g, '-')
+						.replace(/([^A-Z-])([A-Z])/g, (_, m1, m2) => `${m1}-${m2}`)
+						.toLowerCase();
+				}
+				let kebabField = toKebabCase(field);
+				let kebabCslDate = Object.keys(Zotero.Schema.CSL_DATE_MAPPINGS).map(toKebabCase);
+				let kebabCslText = Object.keys(Zotero.Schema.CSL_TEXT_MAPPINGS).map(toKebabCase);
+				let kebabCslName = Object.keys(Zotero.Schema.CSL_NAME_MAPPINGS).map(toKebabCase);
+
+				if (kebabCslName.includes(kebabField)) {
+					lines.unshift(`${field}: ${value}`);
 				}
 				else {
-					lines.push(`${field}: ${value}`);
+					let existingIndex = lines.findIndex((line) => {
+						const match = line.match(/^(.+?): /);
+						return match && match[1] && toKebabCase(match[1]) == kebabField
+							? true
+							: false;
+					});
+					if (existingIndex !== -1) {
+						lines[existingIndex] = `${field}: ${value}`;
+					}
+					else {
+						if (kebabCslText.includes(kebabField) || kebabCslDate.includes(kebabField)) {
+							lines.unshift(`${field}: ${value}`);
+						}
+						else {
+							lines.push(`${field}: ${value}`);
+						}
+					}
 				}
 				this.extra = lines.join('\n');
 			}
