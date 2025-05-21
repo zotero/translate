@@ -1999,11 +1999,17 @@ Zotero.Translate.Base.prototype = {
 				let kebabCslDate = Object.keys(Zotero.Schema.CSL_DATE_MAPPINGS).map(toKebabCase);
 				let kebabCslText = Object.keys(Zotero.Schema.CSL_TEXT_MAPPINGS).map(toKebabCase);
 				let kebabCslName = Object.keys(Zotero.Schema.CSL_NAME_MAPPINGS).map(toKebabCase);
-				if ([...kebabCslDate, ...kebabCslText, ...kebabCslName].includes(kebabField)) {
+
+				if (kebabCslName.includes(kebabField)) {
 					lines.unshift(`${field}: ${value}`);
 				}
 				else {
-					let existingIndex = lines.findIndex(line => line.startsWith(field + ': '));
+					let existingIndex = lines.findIndex((line) => {
+						const match = line.match(/^(.+?): /);
+						return match && match[1] && toKebabCase(match[1]) == kebabField
+							? true
+							: false;
+					});
 					if (existingIndex !== -1) {
 						lines[existingIndex] = `${field}: ${value}`;
 					}
