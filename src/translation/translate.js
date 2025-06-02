@@ -334,22 +334,16 @@ Zotero.Translate.Sandbox = {
 						try {
 							item = item.wrappedJSObject ? item.wrappedJSObject : item;
 							if(arg1 == "itemDone") {
-								Object.defineProperty(
-									item,
-									"setExtra",
-									{
-										value: translate._sandboxZotero.Item.prototype.setExtra,
-										enumerable: false,
-									}
-								);
-								Object.defineProperty(
-									item,
-									"complete",
-									{
-										value: translate._sandboxZotero.Item.prototype.complete,
-										enumerable: false,
-									}
-								);
+								for (let methodName of ["setExtra", "complete"]) {
+									Object.defineProperty(
+										item,
+										"setExtra",
+										{
+											value: translate._sandboxZotero.Item.prototype[methodName],
+											enumerable: false,
+										}
+									);
+								}
 							}
 							arg2(obj, item);
 						} catch(e) {
