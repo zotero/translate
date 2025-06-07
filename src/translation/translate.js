@@ -95,6 +95,7 @@ Zotero.Translate.Sandbox = {
 				}
 					
 				const allowedObjects = [
+					"setExtra",
 					"complete",
 					"attachments",
 					"creators",
@@ -333,14 +334,16 @@ Zotero.Translate.Sandbox = {
 						try {
 							item = item.wrappedJSObject ? item.wrappedJSObject : item;
 							if(arg1 == "itemDone") {
-								Object.defineProperty(
-									item,
-									"complete",
-									{
-										value: translate._sandboxZotero.Item.prototype.complete,
-										enumerable: false,
-									}
-								);
+								for (let methodName of ["setExtra", "complete"]) {
+									Object.defineProperty(
+										item,
+										methodName,
+										{
+											value: translate._sandboxZotero.Item.prototype[methodName],
+											enumerable: false,
+										}
+									);
+								}
 							}
 							arg2(obj, item);
 						} catch(e) {
@@ -1976,13 +1979,46 @@ Zotero.Translate.Base.prototype = {
 			}
 
 			setExtra(field, value) {
+				if (typeof value !== 'string' || value === '') {
+					return;
+				}
 				let lines = String(this.extra || '').split('\n');
-				let existingIndex = lines.findIndex(line => line.startsWith(field + ': '));
-				if (existingIndex !== -1) {
-					lines[existingIndex] = `${field}: ${value}`;
+				function normalize(str) {
+					return str
+						.replace(/^[a-z]/i, (m) => m.toUpperCase())
+						.replace(/(_|-)([a-z])/ig, (_, m) => m.toUpperCase())
+						.replace(/([^A-Z])([A-Z])/g, '$1 $2');
+				}
+				let normalizedField = normalize(field);
+
+				// Put CSL name fields at the top
+				if (Object.values(Zotero.Schema.CSL_NAME_MAPPINGS).some((creatorType) => {
+					return [normalize(creatorType), normalize(`original-${creatorType}`)].includes(normalizedField);
+				})) {
+					lines.unshift(`${field}: ${value}`);
 				}
 				else {
-					lines.push(`${field}: ${value}`);
+					let existingIndex = lines.findIndex((line) => {
+						const match = line.match(/^(.+?): /);
+						return match && match[1] && normalize(match[1]) == normalizedField
+							? true
+							: false;
+					});
+					if (existingIndex !== -1) {
+						lines[existingIndex] = `${field}: ${value}`;
+					}
+					else {
+						// Put CSL text fields and date fields at the top
+						if ([
+							...Zotero.Schema.CSL_TEXT_MAPPINGS,
+							...Zotero.Schema.CSL_DATE_MAPPINGS
+						].some(fieldName => normalize(fieldName) == normalizedField)) {
+							lines.unshift(`${field}: ${value}`);
+						}
+						else {
+							lines.push(`${field}: ${value}`);
+						}
+					}
 				}
 				this.extra = lines.join('\n');
 			}
