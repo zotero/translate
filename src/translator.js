@@ -170,7 +170,7 @@ Zotero.Translator.prototype.serialize = function(properties) {
  */
 Zotero.Translator.prototype.logError = function(message, type, line, lineNumber, colNumber) {
 	if (Zotero.isFx && this.path) {
-		Components.utils.import("resource://gre/modules/FileUtils.jsm");
+		const { FileUtils } = ChromeUtils.importESModule("resource://gre/modules/FileUtils.sys.mjs");
 		var file = new FileUtils.File(this.path);
 		var ios = Components.classes["@mozilla.org/network/io-service;1"].
 		getService(Components.interfaces.nsIIOService);
