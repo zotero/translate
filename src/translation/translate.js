@@ -2595,7 +2595,8 @@ Zotero.Translate.Export.prototype._prepareTranslation = Zotero.Promise.method(fu
 	
 	var configOptions = this._translatorInfo.configOptions || {},
 		getCollections = configOptions.getCollections || false;
-	var loadPromise = Zotero.Promise.resolve();
+	var loadPromise = Promise.resolve();
+	loadPromise.isResolved = () => true; // For noWait check below
 	switch (this._export.type) {
 		case 'collection':
 			this._itemGetter.setCollection(this._export.collection, getCollections);
