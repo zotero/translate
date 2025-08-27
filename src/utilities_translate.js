@@ -306,6 +306,11 @@ Zotero.Utilities.Translate.prototype.processDocuments = async function (urls, pr
 */
 Zotero.Utilities.Translate.prototype.request = async function (url, options = {}) {
 	url = this._translate.resolveURL(url);
+	
+	let parsedURL = new URL(url);
+	if (!['http:', 'https:'].includes(parsedURL.protocol)) {
+		throw new Error(`Translator cannot make ${parsedURL.protocol} request`);
+	}
 
 	let method = options.method || 'GET';
 
