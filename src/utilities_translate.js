@@ -300,8 +300,8 @@ Zotero.Utilities.Translate.prototype.processDocuments = async function (urls, pr
 * 	If 'json', the response's body will be parsed with JSON.parse before being returned.
 * 	If 'document', the response's body will be parsed as an HTML document (like deprecated processDocuments).
 * @return {Promise<object>} A promise resolved with an object containing status,
-* 	headers, and body attributes if the request succeeds.
-* 	If the browser is offline or the response contains a non-2XX status code,
+* 	responseURL, headers, and body attributes if the request succeeds.
+* 	If the browser is offline or the response contains a non-successful status code,
 * 	the promise will be rejected with a Zotero.HTTP.UnexpectedStatusException.
 */
 Zotero.Utilities.Translate.prototype.request = async function (url, options = {}) {
@@ -322,6 +322,7 @@ Zotero.Utilities.Translate.prototype.request = async function (url, options = {}
 	// We let the Zotero.HTTP.UnexpectedStatusException bubble up to the caller.
 	let xhr = await Zotero.HTTP.request(method, url, internalOptions);
 	let status = xhr.status;
+	let responseURL = xhr.responseURL;
 	let headers = {};
 	xhr.getAllResponseHeaders()
 		.trim()
@@ -336,6 +337,7 @@ Zotero.Utilities.Translate.prototype.request = async function (url, options = {}
 
 	return {
 		status,
+		responseURL,
 		headers,
 		body
 	};
