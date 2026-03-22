@@ -492,6 +492,6 @@ for(var j in Zotero.Utilities.Translate.prototype) {
 	}
 }
 
-if (typeof process === 'object' && process + '' === '[object process]'){
+if (typeof module === 'object' && module.exports) {
 	module.exports = Zotero.Utilities.Translate;
 }

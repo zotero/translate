@@ -15,7 +15,7 @@
 /*jsl:option explicit*/
 // Turn on JavaScriptLint variable declaration checking
 
-if (typeof process === 'object' && process + '' === '[object process]'){
+if (typeof module === 'object' && module.exports) {
   this.$rdf = require('./init');
 }
 
@@ -498,6 +498,6 @@ We replace the bigger with the smaller.
 
 }();
 
-if (typeof process === 'object' && process + '' === '[object process]'){
+if (typeof module === 'object' && module.exports) {
   module.exports = $rdf.IndexedFormula;
 }

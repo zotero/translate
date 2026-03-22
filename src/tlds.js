@@ -269,6 +269,11 @@ const TLDS = {
 	"zm":true,
 	"zw":true
 };
-if (typeof process === 'object' && process + '' === '[object process]'){
+
+if (typeof globalThis !== 'undefined') {
+	globalThis.TLDS = TLDS;
+}
+
+if (typeof module === 'object' && module.exports) {
     module.exports = TLDS;
 }
