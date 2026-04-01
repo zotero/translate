@@ -40,17 +40,20 @@ export class TranslatorTester {
 	/**
 	 * @param {Zotero.Translator} translator
 	 * @param {AbstractWebTranslationEnvironment} [webTranslationEnvironment]
+	 * @param {AbstractNonWebTranslationEnvironment} [nonWebTranslationEnvironment]
 	 * @param {Zotero.Translators} [translatorProvider]
 	 * @param {Zotero.CookieSandbox} [cookieSandbox]
 	 * @param {(message: any) => void} [debug]
 	 */
 	constructor(translator, {
 		webTranslationEnvironment,
+		nonWebTranslationEnvironment,
 		translatorProvider,
 		cookieSandbox,
 		debug
 	} = {}) {
 		this._webTranslationEnvironment = webTranslationEnvironment ?? new HTTPWebTranslationEnvironment();
+		this._nonWebTranslationEnvironment = nonWebTranslationEnvironment ?? new InlineNonWebTranslationEnvironment();
 		this._translator = translator;
 		this._translatorProvider = translatorProvider ?? Zotero.Translators;
 		if (!cookieSandbox && typeof process === 'object' && process + '' === '[object process]') {
@@ -71,7 +74,11 @@ export class TranslatorTester {
 	get cookieSandbox() {
 		return this._cookieSandbox;
 	}
-	
+
+	get debug() {
+		return this._debug;
+	}
+
 	/**
 	 * @returns {Promise<Test[]>}
 	 */
@@ -260,37 +267,10 @@ export class TranslatorTester {
 	}
 	
 	async _translateImportOrSearch(test, { signal }) {
-		let { type } = test;
-		let translate = Zotero.Translate.newInstance(type);
-		if (type === 'import') {
-			translate.setString(test.input);
-		}
-		else {
-			translate.setSearch(test.input);
-			translate.setCookieSandbox(this._cookieSandbox);
-		}
-		translate.setTranslatorProvider(this._translatorProvider);
-		translate.setTranslator(this._translator);
-		translate.setHandler('debug', (_, message) => this._debug(message));
-		translate.setHandler('error', (_, error) => this._debug(error));
-
-		signal.addEventListener('abort', () => {
-			translate.complete(false, new Error(signal.reason));
+		return this._nonWebTranslationEnvironment.runTranslation(test, {
+			tester: this,
+			signal,
 		});
-
-		// "internal hack to call detect on this translator"
-		// We have to use this horrible routine because non-web Translates
-		// don't support checkSetTranslators (why not?)
-		translate._potentialTranslators = [this._translator];
-		translate._foundTranslators = [];
-		translate._currentState = 'detect';
-		let detectedItemType = await translate._detect();
-		
-		if (!detectedItemType) {
-			return { items: null, reason: 'Detection failed' };
-		}
-
-		return { detectedItemType, items: await translate.translate({ libraryID: false }) };
 	}
 }
 
@@ -341,6 +321,76 @@ export class AbstractWebTranslationEnvironment {
 	 */
 	destroy(page) {
 		// Default no-op implementation
+	}
+}
+
+/**
+ * Shared logic for running a non-web (import/search) translation.
+ * If a pre-configured Translate instance is passed, it will be used as is.
+ * Otherwise, a new one is created.
+ *
+ * @param {Zotero.Translator} translator
+ * @param {{ type: string, input: any }} test
+ * @param {Zotero.Translate} [translate]
+ * @returns {Promise<{ detectedItemType?: boolean, items?: Zotero.Item[], reason?: string }>}
+ */
+export async function runNonWebTranslation(test, translator, translate) {
+	if (!translate) {
+		translate = Zotero.Translate.newInstance(test.type);
+	}
+	if (test.type === 'import') {
+		translate.setString(test.input);
+	}
+	else {
+		translate.setSearch(test.input);
+	}
+	translate.setTranslator(translator);
+
+	// "internal hack to call detect on this translator"
+	// We have to use this horrible routine because non-web Translates
+	// don't support checkSetTranslators (why not?)
+	translate._potentialTranslators = [translator];
+	translate._foundTranslators = [];
+	translate._currentState = 'detect';
+	let detectedItemType = await translate._detect();
+
+	if (!detectedItemType) {
+		return { items: null, reason: 'Detection failed' };
+	}
+
+	return { detectedItemType, items: await translate.translate({ libraryID: false }) };
+}
+
+/**
+ * @abstract
+ */
+export class AbstractNonWebTranslationEnvironment {
+	/**
+	 * @abstract
+	 * @param {Test} test
+	 * @param {{ tester: TranslatorTester, signal: AbortSignal }} options
+	 * @returns {Promise<{ detectedItemType?: boolean, items?: Zotero.Item[], reason?: string }>}
+	 */
+	async runTranslation(test, { tester, signal }) {
+		throw new Error('Unimplemented');
+	}
+}
+
+export class InlineNonWebTranslationEnvironment extends AbstractNonWebTranslationEnvironment {
+	async runTranslation(test, { tester, signal }) {
+		let translate = Zotero.Translate.newInstance(test.type);
+		if (test.type === 'search') {
+			translate.setCookieSandbox(tester.cookieSandbox);
+		}
+		translate.setTranslatorProvider(tester.translatorProvider);
+		translate.setHandler('debug', (_, message) => tester.debug(message));
+		translate.setHandler('error', (_, error) => tester.debug(error));
+
+		signal.addEventListener('abort', () => {
+			translate.complete(false, new Error(signal.reason));
+		});
+
+		return runNonWebTranslation(test, tester.translator, translate);
 	}
 }
 
