@@ -9,7 +9,7 @@
 // @@@ Check the whole toStr thing tosee whetehr it still makes sense -- tbl
 // 
 
-if (typeof process === 'object' && process + '' === '[object process]'){
+if (typeof module === 'object' && module.exports) {
   var $rdf = require('./init');
 }
 
@@ -881,6 +881,6 @@ __Serializer.prototype.statementsToXML = function (sts) {
 
 }();
 
-if (typeof process === 'object' && process + '' === '[object process]'){
+if (typeof module === 'object' && module.exports) {
   module.exports = $rdf.Serializer;
 }

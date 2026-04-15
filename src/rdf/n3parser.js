@@ -1,4 +1,4 @@
-if (typeof process === 'object' && process + '' === '[object process]'){
+if (typeof module === 'object' && module.exports) {
   var $rdf = require('./init');
 }
 
@@ -1387,6 +1387,6 @@ the module, including tests and test harness.
 
 }();
 
-if (typeof process === 'object' && process + '' === '[object process]'){
+if (typeof module === 'object' && module.exports) {
   module.exports = $rdf.N3Parser;
 }

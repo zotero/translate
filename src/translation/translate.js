@@ -3305,6 +3305,6 @@ Zotero.Translate.IO._RDFSandbox.prototype = {
 	}
 };
 
-if (typeof process === 'object' && process + '' === '[object process]'){
+if (typeof module === 'object' && module.exports) {
     module.exports = Zotero.Translate;
 }

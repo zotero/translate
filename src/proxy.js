@@ -343,7 +343,7 @@ Zotero.Proxy.prototype.toDisplayName = function () {
 	}
 }
 
-if (typeof process === 'object' && process + '' === '[object process]'){
+if (typeof module === 'object' && module.exports) {
 	module.exports = { Proxy: Zotero.Proxy, Proxies: Zotero.Proxies };
 }
 

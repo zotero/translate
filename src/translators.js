@@ -169,6 +169,6 @@ Zotero.Translators.CodeGetter.prototype.getAll = async function () {
 	return Promise.all(codes);
 };
 
-if (typeof process === 'object' && process + '' === '[object process]'){
+if (typeof module === 'object' && module.exports) {
 	module.exports = Zotero.Translators;
 }

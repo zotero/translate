@@ -12,7 +12,7 @@
 //  See also http://www.w3.org/2000/10/swap/uripath.py
 //
 
-if (typeof process === 'object' && process + '' === '[object process]'){
+if (typeof module === 'object' && module.exports) {
   var $rdf = require('./init');
 }
 
@@ -142,6 +142,6 @@ $rdf.Util.uri.protocol = function (uri) {
 } //protocol
 //ends
 
-if (typeof process === 'object' && process + '' === '[object process]'){
+if (typeof module === 'object' && module.exports) {
   module.exports = $rdf.Util;
 }

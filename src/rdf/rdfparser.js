@@ -53,7 +53,7 @@
  * holders.
  */
 
-if (typeof process === 'object' && process + '' === '[object process]'){
+if (typeof module === 'object' && module.exports) {
   var $rdf = require('./init');
 }
  
@@ -573,6 +573,6 @@ $rdf.RDFParser = function (store) {
   }
 }
 
-if (typeof process === 'object' && process + '' === '[object process]'){
+if (typeof module === 'object' && module.exports) {
   module.exports = $rdf.RDFParser;
 }
