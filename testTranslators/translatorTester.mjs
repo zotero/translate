@@ -41,7 +41,7 @@ export class TranslatorTester {
 	 * @param {Zotero.Translator} translator
 	 * @param {AbstractWebTranslationEnvironment} [webTranslationEnvironment]
 	 * @param {Zotero.Translators} [translatorProvider]
-	 * @param {Zotero.CookieSandbox} [cookieSandbox]
+	 * @param {number} [cookieSandbox] userContextId from Zotero.HTTP.newCookieContext()
 	 * @param {(message: any) => void} [debug]
 	 */
 	constructor(translator, {
