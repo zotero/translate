@@ -450,11 +450,11 @@ Zotero.Utilities.Translate.prototype._tryClearChallengeInBrowser = async functio
 	tried.add(entry.match);
 
 	let challengeURL = entry.getChallengeURL ? entry.getChallengeURL(url) : url;
-	let cookieContextId = this._translate.cookieSandbox ?? undefined;
+	let userContextId = this._translate.cookieSandbox ?? undefined;
 
 	Zotero.debug(`Zotero.Utilities.Translate.request(): Clearing challenge at ${challengeURL} before retrying ${url}`);
 	await Zotero.BrowserRequest.clearChallenge(challengeURL, {
-		cookieContextId,
+		userContextId,
 		entry,
 		allowViewer: true
 	});
