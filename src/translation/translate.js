@@ -2078,8 +2078,9 @@ Zotero.Translate.Base.prototype = {
  * @class Web translation
  *
  * @property {Document} document The document object to be used for web scraping (set with setDocument)
- * @property {Zotero.CookieSandbox} cookieSandbox A CookieSandbox to manage cookies for
- *     this Translate instance.
+ * @property {Number} cookieSandbox An ID from Zotero.HTTP.newCookieContext()
+ *     isolating this Translate instance's cookie jar. This is called
+ *     cookieSandbox for compatibility only.
  */
 Zotero.Translate.Web = function() {
 	this._registeredDOMObservers = {}
@@ -2108,14 +2109,22 @@ Zotero.Translate.Web.prototype.setDocument = function(doc) {
 }
 
 /**
- * Sets a Zotero.CookieSandbox to handle cookie management for XHRs initiated from this
- * translate instance
+ * Set the userContextId used for cookie isolation on XHRs initiated from this
+ * translate instance.
  *
- * @param {Zotero.CookieSandbox} cookieSandbox
+ * @param {number} userContextId An ID from Zotero.HTTP.newCookieContext()
  */
-Zotero.Translate.Web.prototype.setCookieSandbox = function(cookieSandbox) {
-	this.cookieSandbox = cookieSandbox;
-}
+Zotero.Translate.Web.prototype.setUserContextId = function (userContextId) {
+	this.cookieSandbox = userContextId;
+};
+
+/**
+ * @deprecated This method only exists for compatibility. Use {@link #setUserContextId()}.
+ * @param {number} userContextId An ID from Zotero.HTTP.newCookieContext()
+ */
+Zotero.Translate.Web.prototype.setCookieSandbox = function (userContextId) {
+	this.setUserContextId(userContextId);
+};
 
 /**
  * Sets headers to include in HTTP requests. Used by translation-server.
@@ -2699,6 +2708,11 @@ Zotero.Translate.Search.prototype.type = "search";
 Zotero.Translate.Search.prototype._entryFunctionSuffix = "Search";
 Zotero.Translate.Search.prototype.Sandbox = Zotero.Translate.Sandbox._inheritFromBase(Zotero.Translate.Sandbox.Search);
 Zotero.Translate.Search.prototype.ERROR_NO_RESULTS = "No items returned from any translator";
+
+/**
+ * @borrows Zotero.Translate.Web#setUserContextId
+ */
+Zotero.Translate.Search.prototype.setUserContextId = Zotero.Translate.Web.prototype.setUserContextId;
 
 /**
  * @borrows Zotero.Translate.Web#setCookieSandbox

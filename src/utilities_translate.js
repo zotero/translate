@@ -325,7 +325,28 @@ Zotero.Utilities.Translate.prototype.request = async function (url, options = {}
 
 	// If the request fails or a non-successful status is returned, Zotero.HTTP.request rejects its promise.
 	// We let the Zotero.HTTP.UnexpectedStatusException bubble up to the caller.
-	let xhr = await Zotero.HTTP.request(method, url, internalOptions);
+	let xhr;
+	try {
+		xhr = await Zotero.HTTP.request(method, url, internalOptions);
+		// ...Except when the URL is registered in Zotero.BrowserRequest and the
+		// response looks like a bot challenge, in which case we try to clear
+		// the challenge in a browser and retry.
+		if (this._shouldClearChallengeInBrowser(url, xhr.status, xhr)) {
+			await this._tryClearChallengeInBrowser(url);
+			xhr = await Zotero.HTTP.request(method, url, internalOptions);
+		}
+	}
+	catch (e) {
+		// As above
+		if (e instanceof Zotero.HTTP.UnexpectedStatusException
+				&& this._shouldClearChallengeInBrowser(url, e.status, e.xmlhttp)) {
+			await this._tryClearChallengeInBrowser(url);
+			xhr = await Zotero.HTTP.request(method, url, internalOptions);
+		}
+		else {
+			throw e;
+		}
+	}
 	let status = xhr.status;
 	let responseURL = xhr.responseURL;
 	let headers = {};
@@ -373,6 +394,70 @@ Zotero.Utilities.Translate.prototype.requestJSON = async function (url, options 
  */
 Zotero.Utilities.Translate.prototype.requestDocument = async function (url, options = {}) {
 	return (await this.request(url, { ...options, responseType: 'document' })).body;
+};
+
+/**
+ * Decide whether a response is a bot challenge that we can clear in a browser.
+ * Zotero.BrowserRequest maintains the list of patterns. We only try to clear
+ * a challenge once per origin per Zotero.Translate instance.
+ */
+Zotero.Utilities.Translate.prototype._shouldClearChallengeInBrowser = function (url, status, xhr) {
+	// If we aren't running in the client, there's nothing we can do
+	if (!Zotero.BrowserRequest) return false;
+	
+	let entry = Zotero.BrowserRequest.getEntryForURL(url);
+	if (!entry) return false;
+
+	let tried = this._translate._browserRequestTried ||= new Set();
+	let originKey = entry.match;
+	if (tried.has(originKey)) {
+		return false;
+	}
+
+	if (entry.detectBlock) {
+		let body = '';
+		try {
+			body = xhr?.responseText || '';
+		}
+		catch {
+			let response = xhr?.response;
+			if (response && typeof response !== 'string') {
+				try {
+					body = JSON.stringify(response);
+				}
+				catch {
+					// Ignore
+				}
+			}
+		}
+		return entry.detectBlock(status, body);
+	}
+	return status >= 400;
+};
+
+/**
+ * Clear a bot-detection challenge for the given URL, escalating to a visible
+ * viewer if the site shows a visible captcha. Cookies acquired are put
+ * into the Zotero.Translate instance's cookie context, if it has one.
+ */
+Zotero.Utilities.Translate.prototype._tryClearChallengeInBrowser = async function (url) {
+	if (!Zotero.BrowserRequest) return;
+	
+	let entry = Zotero.BrowserRequest.getEntryForURL(url);
+	if (!entry) return;
+
+	let tried = this._translate._browserRequestTried ||= new Set();
+	tried.add(entry.match);
+
+	let challengeURL = entry.getChallengeURL ? entry.getChallengeURL(url) : url;
+	let userContextId = this._translate.cookieSandbox ?? undefined;
+
+	Zotero.debug(`Zotero.Utilities.Translate.request(): Clearing challenge at ${challengeURL} before retrying ${url}`);
+	await Zotero.BrowserRequest.clearChallenge(challengeURL, {
+		userContextId,
+		entry,
+		allowViewer: true
+	});
 };
 
 /**
