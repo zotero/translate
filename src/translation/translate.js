@@ -1817,7 +1817,7 @@ Zotero.Translate.Base.prototype = {
 		this._aborted = false;
 		this.saveQueue = [];
 		
-		var parse = function(code) {
+		var parse = async function(code) {
 			Zotero.debug("Translate: Parsing code for " + translator.label + " "
 				+ "(" + translator.translatorID + ", " + translator.lastUpdated + ")", 4);
 			// This might throw but it's better than catching and calling complete(false) here
@@ -1825,7 +1825,7 @@ Zotero.Translate.Base.prototype = {
 			// at least in Import translation detection, causing weird race conditions.
 			// The code that calls this function (which is really only code in this file)
 			// should expect a throw and call complete(false) after catching.
-			this._sandboxManager.eval(
+			await this._sandboxManager.eval(
 				"var exports = {}, ZOTERO_TRANSLATOR_INFO = " + code,
 				[
 					"detect" + this._entryFunctionSuffix,
