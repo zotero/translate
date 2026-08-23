@@ -1278,6 +1278,7 @@ Zotero.Translate.Base.prototype = {
 			throw new Error("'collections' must be an array");
 		}
 		this._collections = options.collections;
+		this._autoCreatedCollectionID = options.autoCreatedCollectionID;
 		this._saveAttachments = options.saveAttachments === undefined || options.saveAttachments;
 		this._linkFiles = options.linkFiles;
 		this._forceTagType = options.forceTagType;
@@ -2474,6 +2475,7 @@ Zotero.Translate.Import.prototype._prepareTranslation = Zotero.Promise.method(fu
 	this._itemSaver = new Zotero.Translate.ItemSaver({
 		libraryID: this._libraryID,
 		collections: this._collections,
+		autoCreatedCollectionID: this._autoCreatedCollectionID,
 		forceTagType: this._forceTagType,
 		attachmentMode: Zotero.Translate.ItemSaver[(this._saveAttachments ? "ATTACHMENT_MODE_FILE" : "ATTACHMENT_MODE_IGNORE")],
 		linkFiles: this._linkFiles,
