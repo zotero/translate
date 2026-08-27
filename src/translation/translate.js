@@ -2532,10 +2532,18 @@ Zotero.Translate.Export.prototype.setLibraryID = function(libraryID) {
 
 /**
  * Sets the collection to be exported (overrides setItems/setGroup)
- * @param {Zotero.Collection[]} collection
+ * @param {Zotero.Collection} collection
  */
 Zotero.Translate.Export.prototype.setCollection = function(collection) {
-	this._export = {type: 'collection', collection: collection};
+	this.setCollections([collection]);
+}
+
+/**
+ * Sets the collections to be exported (overrides setItems/setGroup)
+ * @param {Zotero.Collection[]} collections
+ */
+Zotero.Translate.Export.prototype.setCollections = function(collections) {
+	this._export = {type: 'collections', collections: collections};
 }
 
 /**
@@ -2609,8 +2617,8 @@ Zotero.Translate.Export.prototype._prepareTranslation = Zotero.Promise.method(fu
 	var loadPromise = Promise.resolve();
 	loadPromise.isResolved = () => true; // For noWait check below
 	switch (this._export.type) {
-		case 'collection':
-			this._itemGetter.setCollection(this._export.collection, getCollections);
+		case 'collections':
+			this._itemGetter.setCollections(this._export.collections, getCollections);
 			break;
 		case 'items':
 			this._itemGetter.setItems(this._export.items);

@@ -73,6 +73,10 @@ Zotero.Translate.ItemGetter.prototype = {
 		throw new Error(`Zotero.Translate.ItemGetter.prototype.setCollection: not implemented`);
 	},
 
+	setCollections: function (collections, getChildCollections) {
+		throw new Error(`Zotero.Translate.ItemGetter.prototype.setCollections: not implemented`);
+	},
+
 	/**
 	 * NOTE: This function should use the Zotero.Promise.method wrapper which adds a
 	 * isResolved property to the returned promise for noWait translation.
