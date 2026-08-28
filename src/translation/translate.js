@@ -284,6 +284,7 @@ Zotero.Translate.Sandbox = {
 				if(type !== "export"
 					&& (!translation._handlers['itemDone'] || !translation._handlers['itemDone'].length)) {
 					translation.setHandler("itemDone", function(obj, item) {
+						if (translate._isStaleRun(parentRunID)) return;
 						translate.Sandbox._itemDone(translate, item);
 					});
 				}
@@ -300,6 +301,10 @@ Zotero.Translate.Sandbox = {
 			Zotero.debug("Translate: Creating translate instance of type "+type+" in sandbox");
 			var translation = Zotero.Translate.newInstance(type);
 			translation._parentTranslator = translate;
+			// Anything this child reports back belongs to the run that created it, even if the
+			// parent has moved on to another translator by the time the child finishes
+			var parentRunID = translate._runID;
+			translation._parentRunID = parentRunID;
 			translation.setTranslatorProvider(translate._translatorProvider);
 			
 			if(translation instanceof Zotero.Translate.Export && !(translation instanceof Zotero.Translate.Export)) {
@@ -330,6 +335,8 @@ Zotero.Translate.Sandbox = {
 				if(arg1 === "error") errorHandlerSet = true;
 				translation.setHandler(arg1, 
 					function(obj, item) {
+						if (translate._isStaleRun(parentRunID)) return;
+						
 						try {
 							item = item.wrappedJSObject ? item.wrappedJSObject : item;
 							if(arg1 == "itemDone") {
@@ -344,7 +351,7 @@ Zotero.Translate.Sandbox = {
 							}
 							arg2(obj, item);
 						} catch(e) {
-							translate.complete(false, e);
+							translate.complete(false, e, parentRunID);
 						}
 					}
 				);
@@ -365,30 +372,30 @@ Zotero.Translate.Sandbox = {
 				}
 				if(!translatorsHandlerSet) {
 					translation.setHandler("translators", function() {
-						translate.decrementAsyncProcesses("safeTranslator#getTranslators()");
+						translate.decrementAsyncProcesses("safeTranslator#getTranslators()", undefined, parentRunID);
 					});
 				}
-				translate.incrementAsyncProcesses("safeTranslator#getTranslators()");
+				translate.incrementAsyncProcesses("safeTranslator#getTranslators()", parentRunID);
 				return translation.getTranslators();
 			};
 			
 			var doneHandlerSet = false;
 			safeTranslator.translate = async function () {
-				translate.incrementAsyncProcesses("safeTranslator#translate()");
+				translate.incrementAsyncProcesses("safeTranslator#translate()", parentRunID);
 				setDefaultHandlers(translate, translation);
 				if(!doneHandlerSet) {
 					doneHandlerSet = true;
-					translation.setHandler("done", function() { translate.decrementAsyncProcesses("safeTranslator#translate()") });
+					translation.setHandler("done", function() { translate.decrementAsyncProcesses("safeTranslator#translate()", undefined, parentRunID) });
 				}
 				if(!errorHandlerSet) {
 					errorHandlerSet = true;
-					translation.setHandler("error", function(obj, error) { translate.complete(false, error) });
+					translation.setHandler("error", function(obj, error) { translate.complete(false, error, parentRunID) });
 				}
 				return translation.translate(false);
 			};
 			
 			safeTranslator.getTranslatorObject = function (callback) {
-				translate.incrementAsyncProcesses("safeTranslator#getTranslatorObject()");
+				translate.incrementAsyncProcesses("safeTranslator#getTranslatorObject()", parentRunID);
 				
 				var translator = translation.translator[0];
 				translator = typeof translator === "object"
@@ -418,12 +425,12 @@ Zotero.Translate.Sandbox = {
 						}
 						
 						if (callback) callback(sandbox);
-						translate.decrementAsyncProcesses("safeTranslator#getTranslatorObject()");
+						translate.decrementAsyncProcesses("safeTranslator#getTranslatorObject()", undefined, parentRunID);
 
 						return sandbox;
 					})
 					.catch(function (e) {
-						translate.complete(false, e);
+						translate.complete(false, e, parentRunID);
 					});
 
 				if (!callback) {
@@ -896,6 +903,25 @@ Zotero.Translate.Base.prototype = {
 		this._translatorProvider = Zotero.Translators;
 		this.document = null;
 		this.location = null;
+		this._runID = 0;
+	},
+	
+	/**
+	 * Returns true if the given run ID refers to a translator run that has since been
+	 * superseded, meaning the call should be ignored
+	 *
+	 * Callbacks belonging to a previous translator can fire after the next translator in the
+	 * chain has started, and must not be allowed to complete or abort it.
+	 *
+	 * @param {Integer} [runID] Run ID captured when the async work was started, or undefined
+	 *     for calls that aren't tied to a particular run
+	 * @return {Boolean}
+	 */
+	"_isStaleRun":function(runID) {
+		if (runID === undefined || runID === this._runID) return false;
+		Zotero.debug("Translate: Ignoring call from superseded translator run " + runID
+			+ " (current run is " + this._runID + ")", 3);
+		return true;
 	},
 	
 	/**
@@ -1031,10 +1057,11 @@ Zotero.Translate.Base.prototype = {
 	/**
 	 * Indicates that a new async process is running
 	 */
-	"incrementAsyncProcesses":function(f) {
+	"incrementAsyncProcesses":function(f, runID) {
+		if (this._isStaleRun(runID)) return;
 		this._runningAsyncProcesses++;
 		if(this._parentTranslator) {
-			this._parentTranslator.incrementAsyncProcesses(f+" from child translator");
+			this._parentTranslator.incrementAsyncProcesses(f+" from child translator", this._parentRunID);
 		} else {
 			//Zotero.debug("Translate: Incremented asynchronous processes to "+this._runningAsyncProcesses+" for "+f, 4);
 			//Zotero.debug((new Error()).stack);
@@ -1044,7 +1071,8 @@ Zotero.Translate.Base.prototype = {
 	/**
 	 * Indicates that a new async process is finished
 	 */
-	"decrementAsyncProcesses":function(f, by) {
+	"decrementAsyncProcesses":function(f, by, runID) {
+		if (this._isStaleRun(runID)) return;
 		this._runningAsyncProcesses -= (by ? by : 1);
 		if(!this._parentTranslator) {
 			//Zotero.debug("Translate: Decremented asynchronous processes to "+this._runningAsyncProcesses+" for "+f, 4);
@@ -1053,7 +1081,7 @@ Zotero.Translate.Base.prototype = {
 		if(this._runningAsyncProcesses === 0) {
 			this.complete();
 		}
-		if(this._parentTranslator) this._parentTranslator.decrementAsyncProcesses(f+" from child translator", by);
+		if(this._parentTranslator) this._parentTranslator.decrementAsyncProcesses(f+" from child translator", by, this._parentRunID);
 	},
 
 	/**
@@ -1471,7 +1499,9 @@ Zotero.Translate.Base.prototype = {
 	 * @return {String|NULL} The exception serialized to a string, or null if translation
 	 *     completed successfully.
 	 */
-	"complete":function(returnValue, error) {
+	"complete":function(returnValue, error, runID) {
+		if (this._isStaleRun(runID)) return;
+		
 		// allow translation to be aborted for re-running after selecting items
 		if(this._aborted) return;
 		
@@ -1490,7 +1520,7 @@ Zotero.Translate.Base.prototype = {
 		
 		// reset async processes and propagate them to parent
 		if(this._parentTranslator && this._runningAsyncProcesses) {
-			this._parentTranslator.decrementAsyncProcesses("Zotero.Translate#complete", this._runningAsyncProcesses);
+			this._parentTranslator.decrementAsyncProcesses("Zotero.Translate#complete", this._runningAsyncProcesses, this._parentRunID);
 		}
 		this._runningAsyncProcesses = 0;
 		
@@ -1793,6 +1823,9 @@ Zotero.Translate.Base.prototype = {
 	 * @return {Promise}
 	 */
 	_loadTranslator: Zotero.Promise.method(function (translator) {
+		// Each translator runs under its own run ID, so that a previous translator's
+		// callbacks can't be mistaken for this one's
+		this._runID++;
 		var sandboxLocation = this._getSandboxLocation();
 		if(!this._sandboxLocation || sandboxLocation !== this._sandboxLocation) {
 			this._sandboxLocation = sandboxLocation;
@@ -2323,7 +2356,9 @@ Zotero.Translate.Web.prototype._translateServerComplete = function(statusCode, r
 /**
  * Overload complete to report translation failure
  */
-Zotero.Translate.Web.prototype.complete = async function(returnValue, error) {
+Zotero.Translate.Web.prototype.complete = async function(returnValue, error, runID) {
+	if (this._isStaleRun(runID)) return;
+	
 	// call super
 	var oldState = this._currentState;
 	var errorString = Zotero.Translate.Base.prototype.complete.apply(this, [returnValue, error]);
@@ -2378,7 +2413,9 @@ Zotero.Translate.Import.prototype.setString = function(string) {
 /**
  * Overload {@link Zotero.Translate.Base#complete} to close file
  */
-Zotero.Translate.Import.prototype.complete = function(returnValue, error) {
+Zotero.Translate.Import.prototype.complete = function(returnValue, error, runID) {
+	if (this._isStaleRun(runID)) return;
+	
 	if(this._io) {
 		this._progress = null;
 		this._io.close(false);
@@ -2551,7 +2588,9 @@ Zotero.Translate.Export.prototype.setDisplayOptions = function(displayOptions) {
 /**
  * Overload {@link Zotero.Translate.Base#complete} to close file and set complete
  */
-Zotero.Translate.Export.prototype.complete = function(returnValue, error) {
+Zotero.Translate.Export.prototype.complete = function(returnValue, error, runID) {
+	if (this._isStaleRun(runID)) return;
+	
 	if(this._io) {
 		this._progress = null;
 		this._io.close(true);
@@ -2768,7 +2807,9 @@ Zotero.Translate.Search.prototype.getTranslators = function() {
  * Overload Zotero.Translate.Base#complete to move onto the next translator if
  * translation fails
  */
-Zotero.Translate.Search.prototype.complete = function(returnValue, error) {
+Zotero.Translate.Search.prototype.complete = function(returnValue, error, runID) {
+	if (this._isStaleRun(runID)) return;
+	
 	if(this._currentState == "translate"
 			&& (!this.newItems || !this.newItems.length)
 			&& !this._savingItems
@@ -2781,7 +2822,7 @@ Zotero.Translate.Search.prototype.complete = function(returnValue, error) {
 			this.translator.shift();
 			// reset async processes and propagate them to parent
 			if(this._parentTranslator && this._runningAsyncProcesses) {
-				this._parentTranslator.decrementAsyncProcesses("Zotero.Translate.Search#complete", this._runningAsyncProcesses);
+				this._parentTranslator.decrementAsyncProcesses("Zotero.Translate.Search#complete", this._runningAsyncProcesses, this._parentRunID);
 			}
 			this._runningAsyncProcesses = 0;
 			this.translate({
