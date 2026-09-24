@@ -179,7 +179,10 @@ Zotero.Translate.Sandbox = {
 				// just return the item array
 				if(translate._libraryID === false || translate._parentTranslator) {
 					translate.newItems.push(item);
-					return translate._runHandler("itemDone", item, item);
+					translate.incrementAsyncProcesses('itemDone');
+					let result = await translate._runHandler("itemDone", item, item);
+					translate.decrementAsyncProcesses('itemDone');
+					return result;
 				}
 				
 				// We use this within the connector to keep track of items as they are saved
@@ -342,7 +345,13 @@ Zotero.Translate.Sandbox = {
 									}
 								);
 							}
-							arg2(obj, item);
+							let result = arg2(obj, item);
+							if (result && result.then && result.catch) {
+								return result.catch(() => {
+									translate.complete(false, e);
+								});
+							}
+							return result;
 						} catch(e) {
 							translate.complete(false, e);
 						}
