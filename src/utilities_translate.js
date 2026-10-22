@@ -341,9 +341,8 @@ Zotero.Utilities.Translate.prototype.request = async function (url, options = {}
 		}
 	}
 	catch (e) {
-		// As above
-		if (e instanceof Zotero.HTTP.UnexpectedStatusException
-				&& this._shouldClearChallengeInBrowser(url, e.status, e.xmlhttp)) {
+		// As above.
+		if (this._shouldClearChallengeInBrowser(url, e.status, e.xmlhttp)) {
 			await this._tryClearChallengeInBrowser(url);
 			xhr = await Zotero.HTTP.request(method, url, internalOptions);
 		}
